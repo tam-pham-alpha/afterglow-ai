@@ -1,6 +1,6 @@
 # observer
 
-GitHub is the bell. This process receives webhooks, writes people / components / relationships into the store, and exposes `/overview` for the CHM card.
+GitHub is the bell. This process receives webhooks, writes people / components / relationships into the store, and exposes `/overview` plus `/summary` for the CHM card.
 
 Cron backfill is not in this slice.
 
@@ -13,6 +13,7 @@ yarn workspace @afterglow-ai/observer dev
 
 - `POST /hooks/github` — GitHub webhook
 - `GET /overview` — snapshot for CHM
+- `GET /summary` — evidence-only prose of what the store currently remembers
 - `GET /health`
 
 Default port `3200`. Point a GitHub App or repo webhook at `http://<host>:3200/hooks/github`.

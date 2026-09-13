@@ -12,6 +12,7 @@ import {
   openDefaultStore,
   resolveWebhookSecret,
   type MemoryStore,
+  type MemorySummary,
   type OverviewSnapshot,
 } from '@afterglow-ai/shared';
 import { applyGithubEvent } from './apply-event';
@@ -83,6 +84,10 @@ export class GithubWebhookService implements OnModuleInit, OnModuleDestroy {
 
   overview(): OverviewSnapshot {
     return this.store.overview();
+  }
+
+  summary(): MemorySummary {
+    return this.store.summary();
   }
 
   private syncProxy() {

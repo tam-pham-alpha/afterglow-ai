@@ -10,6 +10,11 @@ export class OverviewController {
     return this.webhooks.overview();
   }
 
+  @Get('summary')
+  summary() {
+    return this.webhooks.summary();
+  }
+
   @Get('health')
   health() {
     return { ok: true, service: 'observer' };

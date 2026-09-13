@@ -79,6 +79,11 @@ export class IngestController {
     });
   }
 
+  @Get('summary')
+  summary() {
+    return this.ingest.summary();
+  }
+
   @Get('map')
   getMap() {
     return this.ingest.getMap();

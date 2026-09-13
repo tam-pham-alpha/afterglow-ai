@@ -135,6 +135,20 @@
         font-size: 0.8rem;
       }
 
+      .lede {
+        margin: 0 0 1rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .gaps {
+        margin: 0 0 1.15rem;
+        padding-left: 1.1rem;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
       @media (max-width: 640px) {
         .metrics {
           grid-template-columns: 1fr 1fr;
@@ -147,7 +161,7 @@
       <article class="card" id="card">
         <header>
           <h1>Afterglow</h1>
-          <span class="badge">overview · display only</span>
+          <span class="badge">overview · summary</span>
         </header>
         <p class="empty" id="status">Loading observer…</p>
       </article>
@@ -174,13 +188,19 @@
           card.innerHTML = `
             <header>
               <h1>Afterglow</h1>
-              <span class="badge">overview · display only</span>
+              <span class="badge">overview · summary</span>
             </header>
             <p class="err">Observer unreachable: ${esc(payload.error)}</p>`;
           return;
         }
 
         const s = payload.snapshot;
+        const summary = payload.summary;
+        const lede = summary
+          ? `<p class="lede">${esc(summary.headline)}\n\n${esc(summary.body)}</p>
+             <h2>Gaps</h2>
+             <ul class="gaps">${summary.gaps.map((gap) => `<li>${esc(gap)}</li>`).join("")}</ul>`
+          : "";
         const rels = rows(
           s.relationships.items,
           (items) => `
@@ -220,8 +240,9 @@
         card.innerHTML = `
           <header>
             <h1>Afterglow</h1>
-            <span class="badge">overview · display only</span>
+            <span class="badge">overview · summary</span>
           </header>
+          ${lede}
           <div class="metrics">
             <div class="metric"><span class="n">${s.hooks.total}</span><span class="l">Hooks triggered</span></div>
             <div class="metric"><span class="n">${s.employees.total}</span><span class="l">Employees</span></div>
@@ -236,8 +257,21 @@
 
       async function refresh() {
         try {
-          const res = await fetch("/api/overview");
-          render(await res.json());
+          const [overviewRes, summaryRes] = await Promise.all([
+            fetch("/api/overview"),
+            fetch("/api/summary"),
+          ]);
+          const overview = await overviewRes.json();
+          const summaryPayload = await summaryRes.json();
+          if (!overview.ok) {
+            render(overview);
+            return;
+          }
+          render({
+            ok: true,
+            snapshot: overview.snapshot,
+            summary: summaryPayload.ok ? summaryPayload.summary : null,
+          });
         } catch (err) {
           render({ ok: false, error: err.message || "failed to load" });
         }

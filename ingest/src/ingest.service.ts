@@ -94,4 +94,8 @@ export class IngestService {
   getMap() {
     return this.store.getMap();
   }
+
+  summary() {
+    return this.store.summary();
+  }
 }

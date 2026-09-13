@@ -6,6 +6,11 @@ export type {
   InstructionRecord,
   KnowledgeDocument,
   MapSnapshot,
+  MemorySummary,
+  MemorySummaryComponent,
+  MemorySummaryHook,
+  MemorySummaryPerson,
+  MemorySummarySeed,
   OverviewSnapshot,
   Relationship,
   RelationshipKind,
@@ -15,6 +20,7 @@ export type {
   WatchedRepo,
 } from './types';
 
+export { excerpt, summarizeMemory } from './summary';
 export { MemoryStore, emptyState, openDefaultStore } from './store/memory.store';
 export { afterglowDataDir, findAfterglowRoot } from './paths';
 

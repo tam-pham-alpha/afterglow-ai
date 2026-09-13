@@ -96,3 +96,46 @@ export type OverviewSnapshot = {
     byComponent: DocCount[];
   };
 };
+
+export type MemorySummaryPerson = {
+  handle: string;
+  links: Array<{ component: string; kind: RelationshipKind }>;
+};
+
+export type MemorySummaryComponent = {
+  id: string;
+  name: string;
+  docs: number;
+  hooks: number;
+};
+
+export type MemorySummarySeed = {
+  id: string;
+  title: string;
+  status: SeedStatus;
+  evidence: string;
+};
+
+export type MemorySummaryHook = {
+  event: string;
+  receivedAt: string;
+  componentId?: string;
+};
+
+export type MemorySummary = {
+  generatedAt: string;
+  headline: string;
+  body: string;
+  gaps: string[];
+  text: string;
+  instruction: {
+    set: boolean;
+    excerpt: string;
+    previousVersions: number;
+  };
+  people: MemorySummaryPerson[];
+  components: MemorySummaryComponent[];
+  seeds: MemorySummarySeed[];
+  recentHooks: MemorySummaryHook[];
+  watchedRepos: string[];
+};

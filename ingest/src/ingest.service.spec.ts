@@ -54,4 +54,19 @@ describe('IngestService', () => {
     expect(map.employees[0].handle).toBe('tam');
     expect(map.watchedRepos[0].repo).toBe('tam-pham-alpha/afterglow-ai');
   });
+
+  it('summarizes the same store the admin just wrote', () => {
+    const ingest = new IngestService();
+    ingest.putInstruction('Do not read DMs.');
+    ingest.addSeed({
+      body: 'Why we chose Aeron',
+      title: 'Aeron ADR',
+      componentId: 'org/payments',
+    });
+    const summary = ingest.summary();
+    expect(summary.instruction.set).toBe(true);
+    expect(summary.body).toContain('Do not read DMs');
+    expect(summary.body).toContain('Aeron ADR');
+    expect(summary.components.map((item) => item.name)).toContain('payments');
+  });
 });

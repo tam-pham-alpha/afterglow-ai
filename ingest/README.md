@@ -9,7 +9,7 @@ Không phải mọi giao tiếp.
 | Admin / web form | ingest | — |
 | GitHub webhook | observer | event, không phải người nạp |
 | Cursor / Claude / agent | Afterglow MCP | hỏi trí nhớ, không ghi |
-| CHM card | `GET /overview` trên observer | display-only |
+| CHM card | `GET /overview` và `GET /summary` trên observer | display-only |
 
 Web sau này chỉ là UI. Write API vẫn là ingest.
 
@@ -31,6 +31,7 @@ POST     /seeds/from-connector
 GET      /seeds
 GET      /seeds/:id
 PUT/GET  /map
+GET      /summary
 GET/POST/DELETE /github
 POST     /github/start
 GET      /github/callback

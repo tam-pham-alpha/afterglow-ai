@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { afterglowDataDir } from '../paths';
+import { summarizeMemory } from '../summary';
 import type {
   Component,
   DocCount,
@@ -9,6 +10,7 @@ import type {
   InstructionRecord,
   KnowledgeDocument,
   MapSnapshot,
+  MemorySummary,
   OverviewSnapshot,
   Relationship,
   RelationshipKind,
@@ -289,5 +291,9 @@ export class MemoryStore {
       relationships: { total: relationships.length, items: relationships },
       docs: { total: totalDocs, byComponent },
     };
+  }
+
+  summary(): MemorySummary {
+    return summarizeMemory(this.state);
   }
 }

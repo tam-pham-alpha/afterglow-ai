@@ -110,13 +110,14 @@
   <body>
     <main>
       <h1>Ingest</h1>
-      <p class="sub">Admin gate. Instruction, seed, map, and the GitHub App connection. Events still land on observer. Agents ask memory through MCP.</p>
+      <p class="sub">Admin gate. Instruction, seed, map, and the GitHub App connection. Events still land on observer. Summary is a read of the same store — it does not invent decisions.</p>
 
       <div class="tabs" role="tablist">
         <button type="button" role="tab" id="tab-github" aria-controls="panel-github" aria-selected="false" data-tab="github">GitHub</button>
         <button type="button" role="tab" id="tab-instruction" aria-controls="panel-instruction" aria-selected="true" data-tab="instruction">Instruction</button>
         <button type="button" role="tab" id="tab-seed" aria-controls="panel-seed" aria-selected="false" data-tab="seed">Seed</button>
         <button type="button" role="tab" id="tab-map" aria-controls="panel-map" aria-selected="false" data-tab="map">Map</button>
+        <button type="button" role="tab" id="tab-summary" aria-controls="panel-summary" aria-selected="false" data-tab="summary">Summary</button>
       </div>
 
       <section class="panel" id="panel-github" role="tabpanel" aria-labelledby="tab-github">
@@ -182,6 +183,14 @@
         </div>
         <pre id="map"></pre>
       </section>
+
+      <section class="panel" id="panel-summary" role="tabpanel" aria-labelledby="tab-summary">
+        <p class="note">
+          What Afterglow currently remembers. Grounded in instruction, seed, map,
+          and GitHub events already in the store. This is not a decision record.
+        </p>
+        <pre id="summary"></pre>
+      </section>
     </main>
     <script>
       const $ = (id) => document.getElementById(id);
@@ -202,7 +211,7 @@
       });
 
       const initial = location.hash.replace("#", "");
-      if (["github", "instruction", "seed", "map"].includes(initial)) {
+      if (["github", "instruction", "seed", "map", "summary"].includes(initial)) {
         showTab(initial);
       }
 
@@ -250,6 +259,8 @@
           : "No seeds yet.";
         const map = await (await fetch("/map")).json();
         $("map").textContent = JSON.stringify(map, null, 2);
+        const summary = await (await fetch("/summary")).json();
+        $("summary").textContent = summary.text || "Memory is empty.";
       }
 
       $("save-instruction").onclick = async () => {

@@ -194,7 +194,7 @@ afterglow-ai/
 | `web` | UI sau này. Mọi ghi admin vẫn gọi ingest, không ghi thẳng store |
 | `docs/` | Landing tĩnh, GitHub Pages. Không phải trí nhớ tổ chức |
 | `_docs/` | Log developer khi xây nền tảng: plan, ADR, note debug. Fork không dùng làm trí nhớ. [`_docs/README.md`](_docs/README.md) |
-| `health-monitor` | Một card display-only: hooks, employees, components, employee↔component, docs theo component. Port `3201` |
+| `health-monitor` | Một card display-only: tóm tắt trí nhớ + hooks, employees, components, employee↔component, docs theo component. Port `3201` |
 
 Watched repos là config của instance (universe / map), không phải package. Không nhét code khách vào monorepo. Không có `knowledge/` trong git.
 
@@ -202,7 +202,7 @@ Không tạo `cron/` hay `resolver/` riêng ngày 1. Tách `resolver/` khi agent
 
 ## Trạng thái
 
-`shared` + `observer` + `ingest` + một card CHM display-only. MCP / web chưa có.
+`shared` + `observer` + `ingest` + một card CHM display-only (kèm tóm tắt trí nhớ). MCP / web chưa có. `GET /summary` đọc store — không bịa decision.
 
 ```bash
 yarn install
