@@ -103,6 +103,17 @@ h3 {
   font-family: var(--serif);
   font-weight: 400;
   line-height: 1.2;
+  text-wrap: balance;
+}
+
+p,
+.lede,
+.quote p,
+.split li,
+figcaption {
+  text-wrap: pretty;
+  orphans: 2;
+  widows: 2;
 }
 
 h1 {
