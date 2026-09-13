@@ -1,9 +1,8 @@
 export type GithubAppManifest = {
   name: string;
   url: string;
-  hook_attributes: { url: string; active: boolean };
+  hook_attributes: { url: string };
   redirect_url: string;
-  callback_urls: string[];
   setup_url: string;
   public: false;
   default_permissions: {
@@ -14,6 +13,8 @@ export type GithubAppManifest = {
   };
   default_events: string[];
 };
+
+const DEFAULT_HOMEPAGE = 'https://github.com/tam-pham-alpha/afterglow-ai';
 
 export function githubFormUrl(org?: string): string {
   const slug = org?.trim();
@@ -27,15 +28,19 @@ export function buildGithubAppManifest(input: {
   name: string;
   ingestUrl: string;
   webhookUrl: string;
+  homepageUrl?: string;
 }): GithubAppManifest {
   const ingestUrl = input.ingestUrl.replace(/\/$/, '');
+  const homepage =
+    input.homepageUrl?.trim() ||
+    process.env.AFTERGLOW_APP_HOMEPAGE?.trim() ||
+    DEFAULT_HOMEPAGE;
   return {
     name: input.name,
-    url: ingestUrl,
-    hook_attributes: { url: input.webhookUrl, active: true },
+    url: homepage,
+    hook_attributes: { url: input.webhookUrl },
     redirect_url: `${ingestUrl}/github/callback`,
-    callback_urls: [`${ingestUrl}/github/callback`],
-    setup_url: `${ingestUrl}/#github`,
+    setup_url: `${ingestUrl}/github/setup`,
     public: false,
     default_permissions: {
       contents: 'read',
@@ -43,9 +48,9 @@ export function buildGithubAppManifest(input: {
       pull_requests: 'read',
       issues: 'read',
     },
+    // installation / installation_repositories are not valid default_events.
+    // GitHub still posts them when the app is installed.
     default_events: [
-      'installation',
-      'installation_repositories',
       'push',
       'pull_request',
       'issues',

@@ -125,6 +125,10 @@
           <code>.data/github.json</code>, not in memory. Observer reads the same
           file. Local webhooks go through a smee.io channel so GitHub can reach
           your machine.
+          If GitHub shows a 500 after Create, refresh
+          <a href="https://github.com/settings/apps">github.com/settings/apps</a>.
+          The one-time code is gone — paste App ID, webhook secret, and the
+          private key from that app, or Connect again.
         </p>
         <pre id="github-status"></pre>
         <label for="github-org">GitHub org (optional — leave empty for your user)</label>
@@ -138,10 +142,16 @@
           <button type="button" class="secondary" id="github-ping">Ping observer</button>
           <button type="button" class="danger" id="github-disconnect">Disconnect</button>
         </div>
-        <label for="github-secret">Local webhook secret (optional shortcut)</label>
-        <input id="github-secret" placeholder="leave empty to generate one" />
+        <label for="github-app-id">App ID (if GitHub created the app but did not redirect)</label>
+        <input id="github-app-id" placeholder="123456" />
+        <label for="github-slug">App slug</label>
+        <input id="github-slug" placeholder="afterglow-xxxx" />
+        <label for="github-secret">Webhook secret</label>
+        <input id="github-secret" placeholder="from the app settings, or leave empty to generate" />
+        <label for="github-pem">Private key (.pem)</label>
+        <textarea class="body" id="github-pem" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea>
         <div class="actions">
-          <button type="button" class="secondary" id="github-save-secret">Save local secret</button>
+          <button type="button" class="secondary" id="github-save-secret">Save app credentials</button>
         </div>
         <pre id="github-meta"></pre>
       </section>
@@ -386,6 +396,11 @@
           body: JSON.stringify({
             webhookSecret: $("github-secret").value || undefined,
             webhookUrl: $("github-webhook").value || undefined,
+            appId: $("github-app-id").value
+              ? Number($("github-app-id").value)
+              : undefined,
+            slug: $("github-slug").value || undefined,
+            privateKey: $("github-pem").value || undefined,
           }),
         });
         if (!res.ok) {
@@ -394,8 +409,9 @@
           return;
         }
         $("github-secret").value = "";
+        $("github-pem").value = "";
         $("github-meta").className = "ok";
-        $("github-meta").textContent = "Local secret saved. Ping observer to prove the share.";
+        $("github-meta").textContent = "Credentials saved. Install the app on djao-trading, then Refresh install.";
         await load();
       };
 

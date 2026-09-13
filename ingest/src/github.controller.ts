@@ -40,6 +40,11 @@ export class GithubController {
     return started;
   }
 
+  @Get('setup')
+  setup(@Res() res: Response) {
+    res.redirect(302, '/#github');
+  }
+
   @Get('callback')
   async callback(@Query('code') code: string | undefined, @Res() res: Response) {
     try {
@@ -64,7 +69,7 @@ export class GithubController {
     body: {
       webhookSecret?: string;
       webhookUrl?: string;
-      appId?: number;
+      appId?: number | string;
       slug?: string;
       privateKey?: string;
     },

@@ -71,9 +71,23 @@ describe('GithubConnectService', () => {
     });
     expect(started.githubFormUrl).toBe('https://github.com/settings/apps/new');
     expect(started.manifest.hook_attributes.url).toBe('https://smee.io/try-me');
+    expect(started.manifest.url).toBe(
+      'https://github.com/tam-pham-alpha/afterglow-ai',
+    );
     expect(started.manifest.redirect_url).toBe(
       'http://127.0.0.1:3202/github/callback',
     );
+    expect(started.manifest.setup_url).toBe(
+      'http://127.0.0.1:3202/github/setup',
+    );
+    expect(started.manifest.default_events).toEqual([
+      'push',
+      'pull_request',
+      'issues',
+      'issue_comment',
+      'release',
+    ]);
+    expect(started.manifest.default_events).not.toContain('installation');
     github.saveManual({ webhookUrl: started.webhookUrl });
     expect(loadGithubConnection()?.webhookUrl).toBe('https://smee.io/try-me');
     expect(loadGithubConnection()?.webhookSecret).toBeTruthy();

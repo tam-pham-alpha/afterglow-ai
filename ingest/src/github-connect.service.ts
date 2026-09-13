@@ -50,6 +50,7 @@ export class GithubConnectService {
       ingestUrl,
       webhookUrl,
     });
+    // Manifest events are repo webhooks only — not installation lifecycle.
     return {
       githubFormUrl: githubFormUrl(input.org),
       manifest,
@@ -101,7 +102,7 @@ export class GithubConnectService {
   saveManual(input: {
     webhookSecret?: string;
     webhookUrl?: string;
-    appId?: number;
+    appId?: number | string;
     slug?: string;
     privateKey?: string;
   }): GithubConnection {
@@ -117,7 +118,7 @@ export class GithubConnectService {
       webhookSecret,
       webhookUrl,
       webhookProxy: isSmeeUrl(webhookUrl),
-      appId: input.appId ?? previous?.appId,
+      appId: parseAppId(input.appId) ?? previous?.appId,
       slug: input.slug?.trim() || previous?.slug,
       privateKey: input.privateKey?.trim() || previous?.privateKey,
       createdAt: previous?.createdAt ?? now,
@@ -201,6 +202,14 @@ export class GithubConnectService {
     }
     return next;
   }
+}
+
+function parseAppId(value: number | string | undefined): number | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
 async function createSmeeChannel(): Promise<string> {
