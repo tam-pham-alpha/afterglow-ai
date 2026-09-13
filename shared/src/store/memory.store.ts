@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
+import { afterglowDataDir } from '../paths';
 import type {
   Component,
   DocCount,
@@ -50,8 +51,7 @@ export function relationshipKey(
 }
 
 export function openDefaultStore(): MemoryStore {
-  const dataDir = process.env.AFTERGLOW_DATA_DIR ?? '.data';
-  return MemoryStore.load(join(dataDir, 'memory.json'));
+  return MemoryStore.load(join(afterglowDataDir(), 'memory.json'));
 }
 
 export class MemoryStore {

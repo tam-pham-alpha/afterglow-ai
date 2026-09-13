@@ -1,20 +1,45 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  applyInstallationPayload,
+  isSmeeUrl,
+  loadGithubConnection,
   openDefaultStore,
+  resolveWebhookSecret,
   type MemoryStore,
   type OverviewSnapshot,
 } from '@afterglow-ai/shared';
 import { applyGithubEvent } from './apply-event';
+import { startSmeeProxy } from './smee-proxy';
 import { verifyGithubSignature } from './verify-signature';
 
 @Injectable()
-export class GithubWebhookService {
+export class GithubWebhookService implements OnModuleInit, OnModuleDestroy {
   private readonly store: MemoryStore;
-  private readonly secret: string;
+  private readonly logger = new Logger(GithubWebhookService.name);
+  private proxy: { close: () => void } | null = null;
+  private proxySource: string | null = null;
+  private timer?: NodeJS.Timeout;
 
   constructor() {
     this.store = openDefaultStore();
-    this.secret = process.env.GITHUB_WEBHOOK_SECRET ?? '';
+  }
+
+  onModuleInit() {
+    this.syncProxy();
+    this.timer = setInterval(() => this.syncProxy(), 2000);
+  }
+
+  onModuleDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+    this.proxy?.close();
   }
 
   ingest(params: {
@@ -24,11 +49,12 @@ export class GithubWebhookService {
     rawBody: Buffer;
     payload: unknown;
   }): { accepted: true; deliveryId: string } {
-    if (this.secret) {
+    const secret = resolveWebhookSecret();
+    if (secret) {
       const ok = verifyGithubSignature(
         params.rawBody,
         params.signature,
-        this.secret,
+        secret,
       );
       if (!ok) {
         throw new UnauthorizedException('invalid GitHub signature');
@@ -43,10 +69,39 @@ export class GithubWebhookService {
       >[1]['payload'],
     });
 
+    if (
+      params.event === 'installation' ||
+      params.event === 'installation_repositories'
+    ) {
+      applyInstallationPayload(
+        (params.payload ?? {}) as Parameters<typeof applyInstallationPayload>[0],
+      );
+    }
+
     return { accepted: true, deliveryId: params.deliveryId };
   }
 
   overview(): OverviewSnapshot {
     return this.store.overview();
+  }
+
+  private syncProxy() {
+    const conn = loadGithubConnection();
+    const source = conn?.webhookProxy && isSmeeUrl(conn.webhookUrl)
+      ? conn.webhookUrl
+      : undefined;
+    if (source === this.proxySource) {
+      return;
+    }
+    this.proxy?.close();
+    this.proxy = null;
+    this.proxySource = source ?? null;
+    if (!source) {
+      return;
+    }
+    const target = `${(
+      process.env.OBSERVER_URL ?? 'http://127.0.0.1:3200'
+    ).replace(/\/$/, '')}/hooks/github`;
+    this.proxy = startSmeeProxy(source, target, this.logger);
   }
 }

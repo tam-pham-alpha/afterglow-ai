@@ -17,6 +17,8 @@ yarn workspace @afterglow-ai/observer dev
 
 Default port `3200`. Point a GitHub App or repo webhook at `http://<host>:3200/hooks/github`.
 
-If `GITHUB_WEBHOOK_SECRET` is set, `X-Hub-Signature-256` is required. If empty, signatures are skipped (local only).
+Webhook secret: `GITHUB_WEBHOOK_SECRET` if set, otherwise `.data/github.json` written by ingest Connect. If both empty, signatures are skipped (local only).
 
-Store: `$AFTERGLOW_DATA_DIR/memory.json` (default `.data/memory.json`). Docs stay `0` until ingest writes counts.
+If that file has a smee.io webhook URL, observer subscribes and forwards to `POST /hooks/github`.
+
+Store: `$AFTERGLOW_DATA_DIR/memory.json` (default repo-root `.data/memory.json`). Docs stay `0` until ingest writes counts.

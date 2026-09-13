@@ -74,6 +74,7 @@
         min-height: 18rem;
         resize: vertical;
       }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
       .actions button {
         margin-top: 0.85rem;
         background: var(--glow);
@@ -84,6 +85,18 @@
         font-weight: 600;
         cursor: pointer;
       }
+      .actions button.secondary {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .actions button.danger {
+        background: transparent;
+        color: #c9a4a4;
+        border: 1px solid rgba(201, 164, 164, 0.35);
+      }
+      .note { color: var(--muted); font-size: 0.88rem; line-height: 1.45; margin: 0 0 0.85rem; }
+      .note a { color: var(--glow); }
       pre {
         white-space: pre-wrap;
         color: var(--muted);
@@ -91,18 +104,47 @@
         margin: 0.75rem 0 0;
       }
       .err { color: #c9a4a4; }
+      .ok { color: #9eb4cc; }
     </style>
   </head>
   <body>
     <main>
       <h1>Ingest</h1>
-      <p class="sub">Admin gate. Instruction, seed, and map only. GitHub events stay on observer. Agents ask memory through MCP.</p>
+      <p class="sub">Admin gate. Instruction, seed, map, and the GitHub App connection. Events still land on observer. Agents ask memory through MCP.</p>
 
       <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-github" aria-controls="panel-github" aria-selected="false" data-tab="github">GitHub</button>
         <button type="button" role="tab" id="tab-instruction" aria-controls="panel-instruction" aria-selected="true" data-tab="instruction">Instruction</button>
         <button type="button" role="tab" id="tab-seed" aria-controls="panel-seed" aria-selected="false" data-tab="seed">Seed</button>
         <button type="button" role="tab" id="tab-map" aria-controls="panel-map" aria-selected="false" data-tab="map">Map</button>
       </div>
+
+      <section class="panel" id="panel-github" role="tabpanel" aria-labelledby="tab-github">
+        <p class="note">
+          Connect creates a GitHub App for this instance. Credentials stay in
+          <code>.data/github.json</code>, not in memory. Observer reads the same
+          file. Local webhooks go through a smee.io channel so GitHub can reach
+          your machine.
+        </p>
+        <pre id="github-status"></pre>
+        <label for="github-org">GitHub org (optional — leave empty for your user)</label>
+        <input id="github-org" placeholder="my-org" />
+        <label for="github-webhook">Public webhook URL (optional — smee is created if empty)</label>
+        <input id="github-webhook" placeholder="https://smee.io/…" />
+        <div class="actions">
+          <button type="button" id="github-connect">Connect GitHub App</button>
+          <button type="button" class="secondary" id="github-install">Install on repos</button>
+          <button type="button" class="secondary" id="github-refresh">Refresh install</button>
+          <button type="button" class="secondary" id="github-ping">Ping observer</button>
+          <button type="button" class="danger" id="github-disconnect">Disconnect</button>
+        </div>
+        <label for="github-secret">Local webhook secret (optional shortcut)</label>
+        <input id="github-secret" placeholder="leave empty to generate one" />
+        <div class="actions">
+          <button type="button" class="secondary" id="github-save-secret">Save local secret</button>
+        </div>
+        <pre id="github-meta"></pre>
+      </section>
 
       <section class="panel active" id="panel-instruction" role="tabpanel" aria-labelledby="tab-instruction">
         <label for="instruction">How Afterglow should understand this org</label>
@@ -160,11 +202,43 @@
       });
 
       const initial = location.hash.replace("#", "");
-      if (["instruction", "seed", "map"].includes(initial)) {
+      if (["github", "instruction", "seed", "map"].includes(initial)) {
         showTab(initial);
       }
 
+      const params = new URLSearchParams(location.search);
+      if (params.get("error")) {
+        $("github-meta").className = "err";
+        $("github-meta").textContent = params.get("error");
+        showTab("github");
+      } else if (params.get("github") === "connected") {
+        $("github-meta").className = "ok";
+        $("github-meta").textContent = "GitHub App saved. Install it on the repos Afterglow should hear.";
+        showTab("github");
+      }
+
+      async function loadGithub() {
+        const gh = await (await fetch("/github")).json();
+        $("github-status").textContent = formatGithub(gh);
+        $("github-install").disabled = !gh.installUrl;
+        $("github-refresh").disabled = !gh.hasApp;
+      }
+
+      function formatGithub(gh) {
+        if (!gh.connected) return "Not connected.";
+        const lines = [
+          gh.hasApp ? `App: ${gh.name || gh.slug}` : "Local secret only — no GitHub App yet.",
+          gh.webhookUrl ? `Webhook: ${gh.webhookUrl}` : null,
+          gh.webhookProxy ? "Observer will subscribe to this smee channel." : null,
+          gh.usingEnvSecret ? "Observer is using GITHUB_WEBHOOK_SECRET from env." : "Observer reads the webhook secret from .data/github.json.",
+          gh.installationId ? `Installation: ${gh.installationId}` : gh.hasApp ? "App created, not installed yet." : null,
+          gh.installedRepos?.length ? `Repos: ${gh.installedRepos.join(", ")}` : null,
+        ];
+        return lines.filter(Boolean).join("\n");
+      }
+
       async function load() {
+        await loadGithub();
         const instruction = await (await fetch("/instructions")).json();
         $("instruction").value = instruction.current || "";
         $("instruction-meta").textContent = instruction.versions?.length
@@ -239,6 +313,96 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        await load();
+      };
+
+      $("github-connect").onclick = async () => {
+        $("github-meta").className = "";
+        $("github-meta").textContent = "Opening GitHub…";
+        const res = await fetch("/github/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            org: $("github-org").value || undefined,
+            webhookUrl: $("github-webhook").value || undefined,
+          }),
+        });
+        if (!res.ok) {
+          $("github-meta").className = "err";
+          $("github-meta").textContent = await res.text();
+          return;
+        }
+        const data = await res.json();
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.githubFormUrl;
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "manifest";
+        input.value = JSON.stringify(data.manifest);
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+      };
+
+      $("github-install").onclick = async () => {
+        const gh = await (await fetch("/github")).json();
+        if (!gh.installUrl) {
+          $("github-meta").className = "err";
+          $("github-meta").textContent = "Connect the GitHub App first.";
+          return;
+        }
+        window.open(gh.installUrl, "_blank");
+      };
+
+      $("github-refresh").onclick = async () => {
+        const res = await fetch("/github/refresh-install", { method: "POST" });
+        if (!res.ok) {
+          $("github-meta").className = "err";
+          $("github-meta").textContent = await res.text();
+          return;
+        }
+        $("github-meta").className = "ok";
+        $("github-meta").textContent = "Installation refreshed. Watched repos merged into the map.";
+        await load();
+      };
+
+      $("github-ping").onclick = async () => {
+        const res = await fetch("/github/ping", { method: "POST" });
+        if (!res.ok) {
+          $("github-meta").className = "err";
+          $("github-meta").textContent = await res.text();
+          return;
+        }
+        $("github-meta").className = "ok";
+        $("github-meta").textContent = "Observer accepted the signed ping. Check the CHM card.";
+        await load();
+      };
+
+      $("github-save-secret").onclick = async () => {
+        const res = await fetch("/github/manual", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            webhookSecret: $("github-secret").value || undefined,
+            webhookUrl: $("github-webhook").value || undefined,
+          }),
+        });
+        if (!res.ok) {
+          $("github-meta").className = "err";
+          $("github-meta").textContent = await res.text();
+          return;
+        }
+        $("github-secret").value = "";
+        $("github-meta").className = "ok";
+        $("github-meta").textContent = "Local secret saved. Ping observer to prove the share.";
+        await load();
+      };
+
+      $("github-disconnect").onclick = async () => {
+        await fetch("/github", { method: "DELETE" });
+        $("github-meta").className = "";
+        $("github-meta").textContent = "Disconnected.";
         await load();
       };
 

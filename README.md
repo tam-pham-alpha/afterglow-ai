@@ -46,7 +46,7 @@ Decision
 Afterglow MCP / web  →  Cursor, Claude, người
 ```
 
-**Ingest.** Cổng admin — instruction, seed, map. Mọi ghi do người chủ động đưa vào đi qua đây. Webhook không. MCP không. Chi tiết: [`ingest/README.md`](ingest/README.md).
+**Ingest.** Cổng admin — instruction, seed, map, và Connect GitHub App. Mọi ghi do người chủ động đưa vào đi qua đây. Webhook không. MCP không. Chi tiết: [`ingest/README.md`](ingest/README.md).
 
 **MCP vào.** Không tự viết connector. Afterglow hỏi GitHub, Notion, Slack, Jira, Docs khi cần. Không ingest cả kho.
 
@@ -131,8 +131,8 @@ Phiên bản đầu không cần hạ tầng cầu kỳ. Thách thức khó nh�
 
 | Mảnh              | Vai trò                                          |
 | ----------------- | ------------------------------------------------ |
-| ingest            | instruction + seed + map; kéo Notion / Docs      |
-| GitHub App        | observer — nhận webhook                          |
+| ingest            | instruction + seed + map + GitHub App connect    |
+| GitHub App        | observer — nhận webhook; secret từ ingest        |
 | Job queue         | ingest job + GitHub event                        |
 | Context resolver  | đọc instruction, rồi lần nguồn qua MCP           |
 | PostgreSQL        | entity, relationship, decision, event, instruction versions |
@@ -188,7 +188,7 @@ afterglow-ai/
 | Workspace / folder | Vai trò |
 | --- | --- |
 | `shared` | `Instruction`, `Service`, `Employee`, `Decision`, `Event`, `Seed`. Mọi process import `@afterglow-ai/shared` |
-| `ingest` | Cổng admin. Instruction / seed / map. Port `3202`. [`ingest/README.md`](ingest/README.md) |
+| `ingest` | Cổng admin. Instruction / seed / map / GitHub connect. Port `3202`. [`ingest/README.md`](ingest/README.md) |
 | `observer` | Webhook là đường chính (`POST /hooks/github`). Cron backfill chưa có. Port `3200`. [`observer/README.md`](observer/README.md) |
 | `mcp` | Afterglow MCP — stdio cho Cursor. Hỏi store, không nhận upload |
 | `web` | UI sau này. Mọi ghi admin vẫn gọi ingest, không ghi thẳng store |
