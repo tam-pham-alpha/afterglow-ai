@@ -46,7 +46,7 @@ Decision
 Afterglow MCP / web  →  Cursor, Claude, người
 ```
 
-**Ingest.** Chỗ org tự đưa điểm tựa: instruction (cách hiểu org), seed (ADR / postmortem đã có), map (service ↔ repo, người ↔ handle). Có thể kéo trang từ Notion, Google Docs qua MCP. Chi tiết: [`ingest/README.md`](ingest/README.md).
+**Ingest.** Cổng admin — instruction, seed, map. Mọi ghi do người chủ động đưa vào đi qua đây. Webhook không. MCP không. Chi tiết: [`ingest/README.md`](ingest/README.md).
 
 **MCP vào.** Không tự viết connector. Afterglow hỏi GitHub, Notion, Slack, Jira, Docs khi cần. Không ingest cả kho.
 
@@ -176,24 +176,24 @@ Yarn workspaces + Turborepo, hình gần date-society: vài process + `shared`, 
 ```text
 afterglow-ai/
   shared/              # types + contracts
-  ingest/              # instruction, seed, map, connector pull
+  ingest/              # admin gate — instruction, seed, map
   observer/            # GitHub webhook → store + /overview
   health-monitor/      # one display-only overview card
   mcp/                 # Afterglow MCP (outbound)
   web/                 # admin ingest + đọc trí nhớ
   docs/                # landing — GitHub Pages
-  _docs/               # chỉ kế hoạch xây nền tảng — không phải memory
+  _docs/               # log / plan của developer upstream — không phải memory
 ```
 
 | Workspace / folder | Vai trò |
 | --- | --- |
 | `shared` | `Instruction`, `Service`, `Employee`, `Decision`, `Event`, `Seed`. Mọi process import `@afterglow-ai/shared` |
-| `ingest` | Org nạp instruction + knowledge ban đầu; job kéo Notion / Google Docs. [`ingest/README.md`](ingest/README.md) |
+| `ingest` | Cổng admin. Instruction / seed / map. Port `3202`. [`ingest/README.md`](ingest/README.md) |
 | `observer` | Webhook là đường chính (`POST /hooks/github`). Cron backfill chưa có. Port `3200`. [`observer/README.md`](observer/README.md) |
 | `mcp` | Afterglow MCP — stdio cho Cursor. Hỏi store, không nhận upload |
-| `web` | Form nạp instruction / seed + duyệt decision. Cùng store với MCP |
+| `web` | UI sau này. Mọi ghi admin vẫn gọi ingest, không ghi thẳng store |
 | `docs/` | Landing tĩnh, GitHub Pages. Không phải trí nhớ tổ chức |
-| `_docs/` | ADR / plan của *upstream* Afterglow. Fork không dùng làm trí nhớ. [`_docs/README.md`](_docs/README.md) |
+| `_docs/` | Log developer khi xây nền tảng: plan, ADR, note debug. Fork không dùng làm trí nhớ. [`_docs/README.md`](_docs/README.md) |
 | `health-monitor` | Một card display-only: hooks, employees, components, employee↔component, docs theo component. Port `3201` |
 
 Watched repos là config của instance (universe / map), không phải package. Không nhét code khách vào monorepo. Không có `knowledge/` trong git.
@@ -202,13 +202,14 @@ Không tạo `cron/` hay `resolver/` riêng ngày 1. Tách `resolver/` khi agent
 
 ## Trạng thái
 
-`shared` + `observer` + một card CHM display-only đã scaffold. Ingest / MCP / web chưa có.
+`shared` + `observer` + `ingest` + một card CHM display-only. MCP / web chưa có.
 
 ```bash
 yarn install
 yarn workspace @afterglow-ai/shared build
 yarn dev:observer   # :3200
-yarn dev:health     # :3201 — http://127.0.0.1:3201/
+yarn dev:health     # :3201
+yarn dev:ingest     # :3202 — admin gate
 ```
 
 Thứ tự chứng minh: **nạp instruction** → một PR merge → decision trong store → `mcp` trả `why_decision` → `web` đọc cùng record → fork thứ hai.

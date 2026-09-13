@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import type { OverviewSnapshot } from '@afterglow-ai/shared';
-import { join } from 'path';
-import { MemoryStore } from '../store/memory.store';
+import {
+  openDefaultStore,
+  type MemoryStore,
+  type OverviewSnapshot,
+} from '@afterglow-ai/shared';
 import { applyGithubEvent } from './apply-event';
 import { verifyGithubSignature } from './verify-signature';
 
@@ -11,8 +13,7 @@ export class GithubWebhookService {
   private readonly secret: string;
 
   constructor() {
-    const dataDir = process.env.AFTERGLOW_DATA_DIR ?? '.data';
-    this.store = MemoryStore.load(join(dataDir, 'memory.json'));
+    this.store = openDefaultStore();
     this.secret = process.env.GITHUB_WEBHOOK_SECRET ?? '';
   }
 

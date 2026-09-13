@@ -1,14 +1,19 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import type {
   Component,
   DocCount,
   Employee,
   HookEvent,
+  InstructionRecord,
+  KnowledgeDocument,
+  MapSnapshot,
   OverviewSnapshot,
   Relationship,
   RelationshipKind,
-} from '@afterglow-ai/shared';
+  Seed,
+  WatchedRepo,
+} from '../types';
 
 export type MemoryState = {
   hooks: HookEvent[];
@@ -16,6 +21,10 @@ export type MemoryState = {
   components: Record<string, Component>;
   relationships: Record<string, Relationship>;
   docs: Record<string, number>;
+  instruction: InstructionRecord;
+  seeds: Record<string, Seed>;
+  documents: Record<string, KnowledgeDocument>;
+  watchedRepos: WatchedRepo[];
 };
 
 export function emptyState(): MemoryState {
@@ -25,6 +34,10 @@ export function emptyState(): MemoryState {
     components: {},
     relationships: {},
     docs: {},
+    instruction: { current: '', versions: [] },
+    seeds: {},
+    documents: {},
+    watchedRepos: [],
   };
 }
 
@@ -36,6 +49,11 @@ export function relationshipKey(
   return `${employeeId}::${componentId}::${kind}`;
 }
 
+export function openDefaultStore(): MemoryStore {
+  const dataDir = process.env.AFTERGLOW_DATA_DIR ?? '.data';
+  return MemoryStore.load(join(dataDir, 'memory.json'));
+}
+
 export class MemoryStore {
   constructor(
     private readonly filePath: string | null,
@@ -45,7 +63,7 @@ export class MemoryStore {
   static load(filePath: string): MemoryStore {
     try {
       const raw = readFileSync(filePath, 'utf8');
-      const parsed = JSON.parse(raw) as MemoryState;
+      const parsed = JSON.parse(raw) as Partial<MemoryState>;
       return new MemoryStore(filePath, {
         ...emptyState(),
         ...parsed,
@@ -54,6 +72,10 @@ export class MemoryStore {
         relationships: parsed.relationships ?? {},
         docs: parsed.docs ?? {},
         hooks: parsed.hooks ?? [],
+        instruction: parsed.instruction ?? { current: '', versions: [] },
+        seeds: parsed.seeds ?? {},
+        documents: parsed.documents ?? {},
+        watchedRepos: parsed.watchedRepos ?? [],
       });
     } catch {
       return new MemoryStore(filePath, emptyState());
@@ -107,6 +129,119 @@ export class MemoryStore {
   setDocCount(componentId: string, count: number): void {
     this.state.docs[componentId] = count;
     this.persist();
+  }
+
+  putInstruction(body: string): InstructionRecord {
+    const at = new Date().toISOString();
+    if (this.state.instruction.current) {
+      this.state.instruction.versions.push({
+        at,
+        body: this.state.instruction.current,
+      });
+    }
+    this.state.instruction.current = body;
+    this.persist();
+    return this.getInstruction();
+  }
+
+  getInstruction(): InstructionRecord {
+    return {
+      current: this.state.instruction.current,
+      versions: [...this.state.instruction.versions],
+    };
+  }
+
+  addSeed(seed: Seed): Seed {
+    this.state.seeds[seed.id] = seed;
+    if (seed.status === 'accepted') {
+      const docId = `seed:${seed.id}`;
+      this.state.documents[docId] = {
+        id: docId,
+        title: seed.title ?? seed.id,
+        componentId: seed.componentId,
+      };
+      if (seed.componentId) {
+        this.upsertComponent({
+          id: seed.componentId,
+          name: seed.componentId.split('/').pop() ?? seed.componentId,
+        });
+        this.state.docs[seed.componentId] =
+          (this.state.docs[seed.componentId] ?? 0) + 1;
+      }
+    }
+    this.persist();
+    return seed;
+  }
+
+  getSeed(id: string): Seed | undefined {
+    return this.state.seeds[id];
+  }
+
+  listSeeds(): Seed[] {
+    return Object.values(this.state.seeds).sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }
+
+  putMap(input: {
+    employees?: Employee[];
+    components?: Component[];
+    documents?: KnowledgeDocument[];
+    watchedRepos?: WatchedRepo[];
+  }): MapSnapshot {
+    for (const employee of input.employees ?? []) {
+      this.upsertEmployee(employee);
+    }
+    for (const component of input.components ?? []) {
+      this.upsertComponent(component);
+    }
+    if (input.documents) {
+      this.state.documents = {};
+      for (const doc of input.documents) {
+        this.state.documents[doc.id] = doc;
+        if (doc.componentId) {
+          this.upsertComponent({
+            id: doc.componentId,
+            name: doc.componentId.split('/').pop() ?? doc.componentId,
+          });
+        }
+      }
+      this.recountDocs();
+    }
+    if (input.watchedRepos) {
+      this.state.watchedRepos = input.watchedRepos;
+    }
+    this.persist();
+    return this.getMap();
+  }
+
+  getMap(): MapSnapshot {
+    return {
+      employees: Object.values(this.state.employees).sort((a, b) =>
+        a.handle.localeCompare(b.handle),
+      ),
+      components: Object.values(this.state.components).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      documents: Object.values(this.state.documents).sort((a, b) =>
+        a.title.localeCompare(b.title),
+      ),
+      watchedRepos: [...this.state.watchedRepos],
+    };
+  }
+
+  private recountDocs(): void {
+    const next: Record<string, number> = {};
+    for (const id of Object.keys(this.state.components)) {
+      next[id] = 0;
+    }
+    for (const doc of Object.values(this.state.documents)) {
+      if (!doc.componentId) {
+        continue;
+      }
+      next[doc.componentId] = (next[doc.componentId] ?? 0) + 1;
+    }
+    this.state.docs = next;
   }
 
   overview(): OverviewSnapshot {

@@ -1,4 +1,4 @@
-import { MemoryStore } from '../store/memory.store';
+import { MemoryStore } from '@afterglow-ai/shared';
 import { applyGithubEvent } from './apply-event';
 
 describe('applyGithubEvent', () => {

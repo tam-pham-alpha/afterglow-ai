@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { MemoryStore } from './memory.store';
+import { MemoryStore } from '@afterglow-ai/shared';
 
 describe('MemoryStore', () => {
   const dir = mkdtempSync(join(tmpdir(), 'afterglow-store-'));

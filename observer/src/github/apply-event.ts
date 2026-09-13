@@ -1,5 +1,4 @@
-import type { RelationshipKind } from '@afterglow-ai/shared';
-import { MemoryStore } from '../store/memory.store';
+import { MemoryStore, type RelationshipKind } from '@afterglow-ai/shared';
 
 type GithubUser = { login?: string; name?: string };
 type GithubRepo = { full_name?: string; name?: string };

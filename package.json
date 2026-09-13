@@ -6,12 +6,14 @@
   "workspaces": [
     "shared",
     "observer",
+    "ingest",
     "health-monitor"
   ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "dev:observer": "yarn workspace @afterglow-ai/observer dev",
+    "dev:ingest": "yarn workspace @afterglow-ai/ingest dev",
     "dev:health": "yarn workspace @afterglow-ai/health-monitor dev",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Afterglow ingest — admin</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0b0f;
+        --ink: #e6eaf0;
+        --muted: #8b93a0;
+        --line: rgba(176, 196, 220, 0.2);
+        --glow: #9eb4cc;
+        --card: #12141a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Source Sans 3", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 70% 50% at 50% 0%, rgba(158, 180, 204, 0.14), transparent 70%),
+          var(--bg);
+      }
+      main {
+        width: min(42rem, calc(100% - 2rem));
+        margin: 2rem auto 3rem;
+      }
+      h1 { font-size: 1.2rem; margin: 0 0 0.35rem; }
+      .sub { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.92rem; }
+      section {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 0.55rem;
+        padding: 1rem 1.1rem 1.15rem;
+        margin-bottom: 1rem;
+      }
+      h2 {
+        margin: 0 0 0.7rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0.55rem 0 0.25rem; }
+      textarea, input {
+        width: 100%;
+        background: #0b0b0f;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 0.35rem;
+        padding: 0.5rem 0.6rem;
+        font: inherit;
+      }
+      textarea { min-height: 7rem; }
+      button {
+        margin-top: 0.7rem;
+        background: var(--glow);
+        color: #0e141c;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.5rem 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      pre {
+        white-space: pre-wrap;
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin: 0.6rem 0 0;
+      }
+      .err { color: #c9a4a4; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Ingest</h1>
+      <p class="sub">Admin gate. Instruction, seed, and map only. GitHub events stay on observer. Agents ask memory through MCP.</p>
+
+      <section>
+        <h2>Instruction</h2>
+        <label for="instruction">How Afterglow should understand this org</label>
+        <textarea id="instruction" placeholder="Do not read Slack DMs. PAY- tickets belong to payments."></textarea>
+        <button type="button" id="save-instruction">Save instruction</button>
+        <pre id="instruction-meta"></pre>
+      </section>
+
+      <section>
+        <h2>Seed</h2>
+        <label for="seed-title">Title</label>
+        <input id="seed-title" placeholder="Aeron ADR" />
+        <label for="seed-component">Component id</label>
+        <input id="seed-component" placeholder="org/payments" />
+        <label for="seed-url">Evidence URL (optional)</label>
+        <input id="seed-url" placeholder="https://…" />
+        <label for="seed-body">Body</label>
+        <textarea id="seed-body" placeholder="Paste an ADR or postmortem."></textarea>
+        <button type="button" id="save-seed">Add seed</button>
+        <pre id="seeds"></pre>
+      </section>
+
+      <section>
+        <h2>Map</h2>
+        <label for="map-employee">Employee handle</label>
+        <input id="map-employee" placeholder="tam-pham-alpha" />
+        <label for="map-component">Component id / name</label>
+        <input id="map-component" placeholder="org/afterglow-ai" />
+        <label for="map-repo">Watched repo</label>
+        <input id="map-repo" placeholder="tam-pham-alpha/afterglow-ai" />
+        <button type="button" id="save-map">Merge into map</button>
+        <pre id="map"></pre>
+      </section>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      async function load() {
+        const instruction = await (await fetch("/instructions")).json();
+        $("instruction").value = instruction.current || "";
+        $("instruction-meta").textContent = instruction.versions?.length
+          ? `${instruction.versions.length} previous version(s)`
+          : "No previous versions";
+        const seeds = await (await fetch("/seeds")).json();
+        $("seeds").textContent = seeds.length
+          ? seeds.map((s) => `${s.status} · ${s.title || s.id} · ${s.evidence.ref}`).join("\n")
+          : "No seeds yet.";
+        const map = await (await fetch("/map")).json();
+        $("map").textContent = JSON.stringify(map, null, 2);
+      }
+
+      $("save-instruction").onclick = async () => {
+        const res = await fetch("/instructions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: $("instruction").value }),
+        });
+        if (!res.ok) {
+          $("instruction-meta").className = "err";
+          $("instruction-meta").textContent = await res.text();
+          return;
+        }
+        $("instruction-meta").className = "";
+        await load();
+      };
+
+      $("save-seed").onclick = async () => {
+        const res = await fetch("/seeds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: $("seed-title").value,
+            componentId: $("seed-component").value || undefined,
+            url: $("seed-url").value || undefined,
+            body: $("seed-body").value || undefined,
+          }),
+        });
+        if (!res.ok) {
+          $("seeds").className = "err";
+          $("seeds").textContent = await res.text();
+          return;
+        }
+        $("seeds").className = "";
+        $("seed-body").value = "";
+        await load();
+      };
+
+      $("save-map").onclick = async () => {
+        const handle = $("map-employee").value.trim();
+        const component = $("map-component").value.trim();
+        const repo = $("map-repo").value.trim();
+        const current = await (await fetch("/map")).json();
+        const body = {
+          employees: handle
+            ? [...current.employees.filter((e) => e.id !== handle), { id: handle, handle }]
+            : current.employees,
+          components: component
+            ? [
+                ...current.components.filter((c) => c.id !== component),
+                { id: component, name: component.split("/").pop() },
+              ]
+            : current.components,
+          documents: current.documents,
+          watchedRepos: repo
+            ? [...current.watchedRepos.filter((r) => r.repo !== repo), { repo }]
+            : current.watchedRepos,
+        };
+        await fetch("/map", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        await load();
+      };
+
+      load();
+    </script>
+  </body>
+</html>
