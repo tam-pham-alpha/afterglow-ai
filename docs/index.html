@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AfterglowAI — khi công ty bắt đầu có trí nhớ</title>
+    <meta
+      name="description"
+      content="Công ty không thiếu dữ liệu. Công ty thiếu trí nhớ. AfterglowAI nối pull request, quyết định và evidence thành trí nhớ tổ chức — không giám sát nhân viên."
+    />
+    <link rel="canonical" href="https://tam-pham-alpha.github.io/afterglow-ai/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AfterglowAI — khi công ty bắt đầu có trí nhớ" />
+    <meta
+      property="og:description"
+      content="GitHub nói chuyện gì vừa đổi. Afterglow lần context, giữ decision, trả trí nhớ lại cho Cursor, Claude, và người đến sau."
+    />
+    <meta property="og:url" content="https://tam-pham-alpha.github.io/afterglow-ai/" />
+    <meta name="theme-color" content="#0b0b0f" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="glow" aria-hidden="true"></div>
+    <header class="wrap nav">
+      <a class="brand" href="./">AfterglowAI</a>
+      <nav>
+        <a href="#how">Cách chạy</a>
+        <a href="#not">Ranh giới</a>
+        <a href="https://github.com/tam-pham-alpha/afterglow-ai">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="wrap hero">
+        <p class="eyebrow">Organizational memory</p>
+        <h1>Công ty không thiếu dữ liệu.<br /><em>Công ty thiếu trí nhớ.</em></h1>
+        <p class="lede">
+          Afterglow là ánh sáng còn lại sau khi nguồn sáng đã đi qua. AfterglowAI
+          không giữ lại con người. Nó làm những dấu vết họ để lại — code, quyết
+          định, incident, design — đủ rõ để người đến sau còn hiểu được.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/tam-pham-alpha/afterglow-ai"
+            >Xem repo</a
+          >
+          <a
+            class="btn ghost"
+            href="https://github.com/tam-pham-alpha/xaolonist.eth/pull/18"
+            >Đọc thesis</a
+          >
+        </div>
+      </section>
+
+      <section class="wrap problem">
+        <h2>Các hệ thống đứng cạnh nhau, nhưng không biết nhau.</h2>
+        <p>
+          GitHub, Slack, Jira, Notion, Grafana đều đầy. Một pull request có thể
+          đến từ một incident, incident từ Slack, Slack trỏ một thiết kế của
+          người đã chuyển team. Sáu tháng sau, engineer mới chỉ thấy đoạn code
+          cuối cùng.
+        </p>
+        <p>
+          Tài liệu truyền thống thất bại vì càng bận càng ít viết. Afterglow đi
+          ngược: không bắt người tạo knowledge. Nó quan sát artifact vốn đã có,
+          rồi nối quan hệ. Knowledge là sản phẩm phụ của công việc hàng ngày.
+        </p>
+      </section>
+
+      <section class="wrap" id="how">
+        <h2>GitHub là tiếng chuông. Phần còn lại là lần câu chuyện.</h2>
+        <ol class="steps">
+          <li>
+            <span class="n">01</span>
+            <h3>Ingest</h3>
+            <p>
+              Fork, deploy, nạp instruction và knowledge ban đầu. Có thể kéo
+              Notion hay Google Docs. Không đổ wiki vào git.
+            </p>
+          </li>
+          <li>
+            <span class="n">02</span>
+            <h3>Observer</h3>
+            <p>
+              PR merge, issue đóng, release — tín hiệu tổ chức vừa thật sự đổi.
+              Cron chỉ backfill, không phải nguồn sự thật.
+            </p>
+          </li>
+          <li>
+            <span class="n">03</span>
+            <h3>Decision</h3>
+            <p>
+              Không lưu thêm một search engine. Giữ vì sao: giả thuyết, phương
+              án bị loại, evidence, PR, outcome sau deploy.
+            </p>
+          </li>
+          <li>
+            <span class="n">04</span>
+            <h3>Afterglow MCP</h3>
+            <p>
+              Cursor, Claude, ChatGPT hỏi lại trí nhớ:
+              <code>why_decision</code>, <code>who_knows</code>,
+              <code>similar_incidents</code>.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="wrap quote">
+        <blockquote>
+          <p>
+            Đưa Afterglow một pull request vừa merge. Senior đọc decision record
+            xong phải nói: đúng, đây là lý do chúng ta đã làm như vậy.
+          </p>
+          <footer>First proof</footer>
+        </blockquote>
+      </section>
+
+      <section class="wrap" id="not">
+        <h2>Trí nhớ, không giám sát.</h2>
+        <ul class="split">
+          <li>
+            <strong>Quan sát work artifacts</strong>
+            PR, issue, deploy, design, incident. Agent chỉ lần context khi có
+            thay đổi thật.
+          </li>
+          <li>
+            <strong>Mọi kết luận có evidence</strong>
+            Knowledge là lớp diễn giải trên bằng chứng, không phải lời kể của
+            AI. Decision mới supersede, không ghi đè.
+          </li>
+          <li>
+            <strong>Không đọc người</strong>
+            Không prompt cá nhân, không đo việc mỗi ngày, không chấm điểm. Một
+            người rời đi — counterpart không thay họ, chỉ giữ phần năng lực đã
+            thể hiện.
+          </li>
+        </ul>
+      </section>
+
+      <section class="wrap close">
+        <h2>Một fork, một tổ chức.</h2>
+        <p>
+          Afterglow là nền tảng tự host. Org khác fork repo, nạp instruction của
+          họ, bật observer. Trí nhớ sống trong store, không trong folder docs.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/tam-pham-alpha/afterglow-ai"
+            >Fork afterglow-ai</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap foot">
+      <p>AfterglowAI · residual light after the source has passed.</p>
+      <p>
+        <a href="https://github.com/tam-pham-alpha/afterglow-ai">GitHub</a>
+        ·
+        <a href="https://github.com/tam-pham-alpha/xaolonist.eth/pull/18">Thesis</a>
+      </p>
+    </footer>
+  </body>
+</html>
