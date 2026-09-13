@@ -177,24 +177,24 @@ Yarn workspaces + Turborepo, hình gần date-society: vài process + `shared`, 
 afterglow-ai/
   shared/              # types + contracts
   ingest/              # instruction, seed, map, connector pull
-  observer/            # GitHub App webhook + cron backfill
+  observer/            # GitHub webhook → store + /overview
+  health-monitor/      # one display-only overview card
   mcp/                 # Afterglow MCP (outbound)
   web/                 # admin ingest + đọc trí nhớ
   docs/                # landing — GitHub Pages
   _docs/               # chỉ kế hoạch xây nền tảng — không phải memory
-  health-monitor/      # sau
 ```
 
 | Workspace / folder | Vai trò |
 | --- | --- |
 | `shared` | `Instruction`, `Service`, `Employee`, `Decision`, `Event`, `Seed`. Mọi process import `@afterglow-ai/shared` |
 | `ingest` | Org nạp instruction + knowledge ban đầu; job kéo Notion / Google Docs. [`ingest/README.md`](ingest/README.md) |
-| `observer` | Webhook là đường chính; cron backfill. Resolver ở đây đến first proof. Đọc instruction trước khi lần PR |
+| `observer` | Webhook là đường chính (`POST /hooks/github`). Cron backfill chưa có. Port `3200`. [`observer/README.md`](observer/README.md) |
 | `mcp` | Afterglow MCP — stdio cho Cursor. Hỏi store, không nhận upload |
 | `web` | Form nạp instruction / seed + duyệt decision. Cùng store với MCP |
 | `docs/` | Landing tĩnh, GitHub Pages. Không phải trí nhớ tổ chức |
 | `_docs/` | ADR / plan của *upstream* Afterglow. Fork không dùng làm trí nhớ. [`_docs/README.md`](_docs/README.md) |
-| `health-monitor` | Chưa scaffold |
+| `health-monitor` | Một card display-only: hooks, employees, components, employee↔component, docs theo component. Port `3201` |
 
 Watched repos là config của instance (universe / map), không phải package. Không nhét code khách vào monorepo. Không có `knowledge/` trong git.
 
@@ -202,8 +202,15 @@ Không tạo `cron/` hay `resolver/` riêng ngày 1. Tách `resolver/` khi agent
 
 ## Trạng thái
 
-Repo mới. Đây là founding document, chưa có implementation.
+`shared` + `observer` + một card CHM display-only đã scaffold. Ingest / MCP / web chưa có.
 
-Thứ tự chứng minh: **nạp instruction** → một PR merge → decision trong store → `mcp` trả `why_decision` → `web` đọc cùng record → fork thứ hai (org khác) → digital counterpart.
+```bash
+yarn install
+yarn workspace @afterglow-ai/shared build
+yarn dev:observer   # :3200
+yarn dev:health     # :3201 — http://127.0.0.1:3201/
+```
 
-Thứ tự scaffold: `shared` → `ingest` → `observer` + first proof → `mcp` → `web` → `health-monitor`. Không đảo ngược. CHM đứng sau. Org khác = fork / deploy khác, không thêm folder.
+Thứ tự chứng minh: **nạp instruction** → một PR merge → decision trong store → `mcp` trả `why_decision` → `web` đọc cùng record → fork thứ hai.
+
+Org khác = fork / deploy khác, không thêm folder.

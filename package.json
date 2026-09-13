@@ -1,0 +1,27 @@
+{
+  "name": "afterglow-ai",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AfterglowAI — organizational memory",
+  "workspaces": [
+    "shared",
+    "observer",
+    "health-monitor"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "dev:observer": "yarn workspace @afterglow-ai/observer dev",
+    "dev:health": "yarn workspace @afterglow-ai/health-monitor dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "yarn@1.22.22"
+}
