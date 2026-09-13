@@ -24,25 +24,42 @@
           var(--bg);
       }
       main {
-        width: min(42rem, calc(100% - 2rem));
+        width: min(56rem, calc(100% - 2rem));
         margin: 2rem auto 3rem;
       }
       h1 { font-size: 1.2rem; margin: 0 0 0.35rem; }
-      .sub { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.92rem; }
-      section {
+      .sub { color: var(--muted); margin: 0 0 1.25rem; font-size: 0.92rem; }
+      .tabs {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .tabs button {
+        margin: 0;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid transparent;
+        border-bottom: 0;
+        border-radius: 0.4rem 0.4rem 0 0;
+        padding: 0.55rem 1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .tabs button[aria-selected="true"] {
+        color: var(--ink);
+        background: var(--card);
+        border-color: var(--line);
+      }
+      .panel {
+        display: none;
         background: var(--card);
         border: 1px solid var(--line);
-        border-radius: 0.55rem;
-        padding: 1rem 1.1rem 1.15rem;
-        margin-bottom: 1rem;
+        border-top: 0;
+        border-radius: 0 0 0.55rem 0.55rem;
+        padding: 1.15rem 1.25rem 1.3rem;
       }
-      h2 {
-        margin: 0 0 0.7rem;
-        font-size: 0.78rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
+      .panel.active { display: block; }
       label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0.55rem 0 0.25rem; }
       textarea, input {
         width: 100%;
@@ -50,12 +67,15 @@
         color: var(--ink);
         border: 1px solid var(--line);
         border-radius: 0.35rem;
-        padding: 0.5rem 0.6rem;
+        padding: 0.65rem 0.75rem;
         font: inherit;
       }
-      textarea { min-height: 7rem; }
-      button {
-        margin-top: 0.7rem;
+      textarea.body {
+        min-height: 18rem;
+        resize: vertical;
+      }
+      .actions button {
+        margin-top: 0.85rem;
         background: var(--glow);
         color: #0e141c;
         border: 0;
@@ -68,7 +88,7 @@
         white-space: pre-wrap;
         color: var(--muted);
         font-size: 0.82rem;
-        margin: 0.6rem 0 0;
+        margin: 0.75rem 0 0;
       }
       .err { color: #c9a4a4; }
     </style>
@@ -78,16 +98,22 @@
       <h1>Ingest</h1>
       <p class="sub">Admin gate. Instruction, seed, and map only. GitHub events stay on observer. Agents ask memory through MCP.</p>
 
-      <section>
-        <h2>Instruction</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-instruction" aria-controls="panel-instruction" aria-selected="true" data-tab="instruction">Instruction</button>
+        <button type="button" role="tab" id="tab-seed" aria-controls="panel-seed" aria-selected="false" data-tab="seed">Seed</button>
+        <button type="button" role="tab" id="tab-map" aria-controls="panel-map" aria-selected="false" data-tab="map">Map</button>
+      </div>
+
+      <section class="panel active" id="panel-instruction" role="tabpanel" aria-labelledby="tab-instruction">
         <label for="instruction">How Afterglow should understand this org</label>
-        <textarea id="instruction" placeholder="Do not read Slack DMs. PAY- tickets belong to payments."></textarea>
-        <button type="button" id="save-instruction">Save instruction</button>
+        <textarea class="body" id="instruction" placeholder="Do not read Slack DMs. PAY- tickets belong to payments."></textarea>
+        <div class="actions">
+          <button type="button" id="save-instruction">Save instruction</button>
+        </div>
         <pre id="instruction-meta"></pre>
       </section>
 
-      <section>
-        <h2>Seed</h2>
+      <section class="panel" id="panel-seed" role="tabpanel" aria-labelledby="tab-seed">
         <label for="seed-title">Title</label>
         <input id="seed-title" placeholder="Aeron ADR" />
         <label for="seed-component">Component id</label>
@@ -95,25 +121,48 @@
         <label for="seed-url">Evidence URL (optional)</label>
         <input id="seed-url" placeholder="https://…" />
         <label for="seed-body">Body</label>
-        <textarea id="seed-body" placeholder="Paste an ADR or postmortem."></textarea>
-        <button type="button" id="save-seed">Add seed</button>
+        <textarea class="body" id="seed-body" placeholder="Paste an ADR or postmortem."></textarea>
+        <div class="actions">
+          <button type="button" id="save-seed">Add seed</button>
+        </div>
         <pre id="seeds"></pre>
       </section>
 
-      <section>
-        <h2>Map</h2>
+      <section class="panel" id="panel-map" role="tabpanel" aria-labelledby="tab-map">
         <label for="map-employee">Employee handle</label>
         <input id="map-employee" placeholder="tam-pham-alpha" />
         <label for="map-component">Component id / name</label>
         <input id="map-component" placeholder="org/afterglow-ai" />
         <label for="map-repo">Watched repo</label>
         <input id="map-repo" placeholder="tam-pham-alpha/afterglow-ai" />
-        <button type="button" id="save-map">Merge into map</button>
+        <div class="actions">
+          <button type="button" id="save-map">Merge into map</button>
+        </div>
         <pre id="map"></pre>
       </section>
     </main>
     <script>
       const $ = (id) => document.getElementById(id);
+
+      function showTab(name) {
+        document.querySelectorAll(".tabs [role='tab']").forEach((tab) => {
+          const on = tab.dataset.tab === name;
+          tab.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        document.querySelectorAll(".panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.id === `panel-${name}`);
+        });
+        history.replaceState(null, "", `#${name}`);
+      }
+
+      document.querySelectorAll(".tabs [role='tab']").forEach((tab) => {
+        tab.addEventListener("click", () => showTab(tab.dataset.tab));
+      });
+
+      const initial = location.hash.replace("#", "");
+      if (["instruction", "seed", "map"].includes(initial)) {
+        showTab(initial);
+      }
 
       async function load() {
         const instruction = await (await fetch("/instructions")).json();
