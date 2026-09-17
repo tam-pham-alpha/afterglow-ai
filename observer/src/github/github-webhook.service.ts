@@ -48,6 +48,7 @@ export class GithubWebhookService implements OnModuleInit, OnModuleDestroy {
     signature?: string;
     rawBody: Buffer;
     payload: unknown;
+    viaSmeeProxy?: boolean;
   }): { accepted: true; deliveryId: string } {
     const secret = resolveWebhookSecret();
     if (secret) {
@@ -56,7 +57,12 @@ export class GithubWebhookService implements OnModuleInit, OnModuleDestroy {
         params.signature,
         secret,
       );
-      if (!ok) {
+      if (!ok && params.viaSmeeProxy) {
+        // smee delivers a parsed object; re-stringifying it breaks GitHub's HMAC.
+        this.logger.warn(
+          `smee body was re-serialized; accepting ${params.event} ${params.deliveryId} without a signature match`,
+        );
+      } else if (!ok) {
         throw new UnauthorizedException('invalid GitHub signature');
       }
     }

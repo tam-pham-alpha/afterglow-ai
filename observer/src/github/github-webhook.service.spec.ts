@@ -59,4 +59,23 @@ describe('GithubWebhookService — shared connection secret', () => {
       }),
     ).toThrow(UnauthorizedException);
   });
+
+  it('accepts a smee-forwarded event when re-serialization breaks the HMAC', () => {
+    saveGithubConnection({
+      webhookSecret: 'file-secret',
+      createdAt: '2026-09-13T00:00:00.000Z',
+      updatedAt: '2026-09-13T00:00:00.000Z',
+    });
+    const service = new GithubWebhookService();
+    expect(
+      service.ingest({
+        event: 'push',
+        deliveryId: 'd-smee',
+        signature: 'sha256=deadbeef',
+        rawBody: Buffer.from('{"ref":"refs/heads/main"}'),
+        payload: { ref: 'refs/heads/main', sender: { login: 'tam-pham-alpha' } },
+        viaSmeeProxy: true,
+      }),
+    ).toEqual({ accepted: true, deliveryId: 'd-smee' });
+  });
 });

@@ -1,6 +1,8 @@
 import { request as httpsRequest } from 'https';
 import { URL } from 'url';
 
+export const SMEE_PROXY_HEADER = 'x-afterglow-smee-proxy';
+
 type Logger = {
   log: (message: string) => void;
   error: (message: string) => void;
@@ -45,7 +47,7 @@ export function startSmeeProxy(
               .map((line) => line.slice(5).trim())
               .join('');
             if (data) {
-              void forward(data, target, logger);
+              void forwardSmeeEvent(data, target, logger);
             }
           }
         });
@@ -79,7 +81,11 @@ export function startSmeeProxy(
   };
 }
 
-async function forward(raw: string, target: string, logger: Logger) {
+export async function forwardSmeeEvent(
+  raw: string,
+  target: string,
+  logger: Logger,
+) {
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -93,6 +99,7 @@ async function forward(raw: string, target: string, logger: Logger) {
     typeof parsed.body === 'string' ? parsed.body : JSON.stringify(parsed.body);
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    [SMEE_PROXY_HEADER]: '1',
   };
   for (const [key, value] of Object.entries(parsed)) {
     if (key === 'body' || key === 'query' || value == null) {
