@@ -3,6 +3,16 @@ import { URL } from 'url';
 
 export const SMEE_PROXY_HEADER = 'x-afterglow-smee-proxy';
 
+const FORWARDED_HEADERS = new Set([
+  'x-github-event',
+  'x-github-delivery',
+  'x-github-hook-id',
+  'x-github-hook-installation-target-id',
+  'x-github-hook-installation-target-type',
+  'x-hub-signature',
+  'x-hub-signature-256',
+]);
+
 type Logger = {
   log: (message: string) => void;
   error: (message: string) => void;
@@ -102,11 +112,12 @@ export async function forwardSmeeEvent(
     [SMEE_PROXY_HEADER]: '1',
   };
   for (const [key, value] of Object.entries(parsed)) {
-    if (key === 'body' || key === 'query' || value == null) {
+    const header = key.toLowerCase();
+    if (!FORWARDED_HEADERS.has(header) || value == null) {
       continue;
     }
     if (typeof value === 'string' || typeof value === 'number') {
-      headers[key] = String(value);
+      headers[header] = String(value);
     }
   }
   try {

@@ -11,7 +11,7 @@ yarn workspace @afterglow-ai/shared build
 yarn workspace @afterglow-ai/observer dev
 ```
 
-- `GET /` — event timeline (HTML)
+- `GET /` — event timeline (HTML): time, event, repo, actor, short detail
 - `GET /events` — hook list, newest `receivedAt` first
 - `POST /hooks/github` — GitHub webhook
 - `GET /overview` — snapshot for CHM

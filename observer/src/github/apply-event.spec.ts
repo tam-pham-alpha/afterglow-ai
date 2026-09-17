@@ -42,4 +42,36 @@ describe('applyGithubEvent', () => {
     expect(snap.components.total).toBe(0);
     expect(snap.employees.items[0].handle).toBe('github');
   });
+
+  it('keeps repo, actor, and a short summary for djao-trading workflow events', () => {
+    const store = new MemoryStore(null);
+    applyGithubEvent(store, {
+      deliveryId: 'wf-1',
+      event: 'workflow_run',
+      receivedAt: '2026-09-17T14:42:00.000Z',
+      payload: {
+        action: 'completed',
+        sender: { login: 'tam-pham-alpha' },
+        repository: {
+          full_name: 'tam-pham-alpha/djao-trading',
+          name: 'djao-trading',
+        },
+        workflow_run: {
+          name: 'Deploy PAVN',
+          head_branch: 'main',
+          conclusion: 'success',
+        },
+      },
+    });
+
+    expect(store.events().items[0]).toMatchObject({
+      id: 'wf-1',
+      event: 'workflow_run',
+      componentId: 'tam-pham-alpha/djao-trading',
+      componentName: 'djao-trading',
+      actor: 'tam-pham-alpha',
+      action: 'completed',
+      summary: 'Deploy PAVN · main · success',
+    });
+  });
 });

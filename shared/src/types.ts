@@ -22,6 +22,9 @@ export type HookEvent = {
   event: string;
   receivedAt: string;
   componentId?: string;
+  actor?: string;
+  action?: string;
+  summary?: string;
 };
 
 export type HookEventView = HookEvent & {

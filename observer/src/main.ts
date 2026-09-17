@@ -8,6 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  app.useBodyParser('json', { limit: '5mb' });
   app.enableShutdownHooks();
   app.useStaticAssets(join(__dirname, '..', 'public'));
   const port = Number(process.env.OBSERVER_PORT ?? process.env.PORT ?? 3200);

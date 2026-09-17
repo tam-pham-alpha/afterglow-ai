@@ -146,6 +146,11 @@
         font-size: 0.8rem;
       }
 
+      .summary {
+        color: var(--ink);
+        font-size: 0.88rem;
+      }
+
       @media (max-width: 640px) {
         .metrics {
           grid-template-columns: 1fr;
@@ -213,7 +218,8 @@
                   <th>Time</th>
                   <th>Event</th>
                   <th>Component</th>
-                  <th>Delivery</th>
+                  <th>Actor</th>
+                  <th>Detail</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,8 +228,9 @@
                     (row) => `<tr>
                       <td class="time" title="${esc(row.receivedAt)}">${esc(formatTime(row.receivedAt))}</td>
                       <td class="kind">${esc(row.event)}</td>
-                      <td>${esc(row.componentName || row.componentId || "—")}</td>
-                      <td class="id">${esc(row.id)}</td>
+                      <td>${esc(row.componentId || row.componentName || "—")}</td>
+                      <td>${esc(row.actor || "—")}</td>
+                      <td class="summary">${esc(row.summary || row.action || "—")}</td>
                     </tr>`,
                   )
                   .join("")}

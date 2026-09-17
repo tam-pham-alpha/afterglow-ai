@@ -3,11 +3,28 @@ import { MemoryStore, type RelationshipKind } from '@afterglow-ai/shared';
 type GithubUser = { login?: string; name?: string };
 type GithubRepo = { full_name?: string; name?: string };
 type GithubPayload = {
+  action?: string;
+  ref?: string;
   sender?: GithubUser;
   repository?: GithubRepo;
-  pull_request?: { user?: GithubUser; merged?: boolean };
-  issue?: { user?: GithubUser };
-  release?: { author?: GithubUser };
+  pull_request?: { user?: GithubUser; merged?: boolean; title?: string };
+  issue?: { user?: GithubUser; title?: string };
+  release?: { author?: GithubUser; tag_name?: string; name?: string };
+  workflow_run?: {
+    name?: string;
+    display_title?: string;
+    status?: string;
+    conclusion?: string | null;
+    head_branch?: string;
+    repository?: GithubRepo;
+  };
+  workflow_job?: {
+    name?: string;
+    workflow_name?: string;
+    status?: string;
+    conclusion?: string | null;
+  };
+  head_commit?: { message?: string };
 };
 
 export type ApplyGithubEventInput = {
@@ -26,11 +43,61 @@ function collectPeople(payload: GithubPayload): GithubUser[] {
   ].filter((user): user is GithubUser => Boolean(user?.login));
 }
 
+function repoFrom(payload: GithubPayload): GithubRepo | undefined {
+  const repo = payload.repository ?? payload.workflow_run?.repository;
+  if (!repo?.full_name && !repo?.name) {
+    return undefined;
+  }
+  return repo;
+}
+
+function firstLine(value: string | undefined): string | undefined {
+  const line = value?.split('\n')[0]?.trim();
+  return line || undefined;
+}
+
+function hookSummary(event: string, payload: GithubPayload): string | undefined {
+  if (event === 'push') {
+    const branch = payload.ref?.replace(/^refs\/heads\//, '');
+    const commit = firstLine(payload.head_commit?.message);
+    return [branch, commit].filter(Boolean).join(' · ') || undefined;
+  }
+  if (event === 'workflow_run') {
+    const run = payload.workflow_run;
+    const state = run?.conclusion ?? run?.status;
+    return [run?.name ?? run?.display_title, run?.head_branch, state]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  if (event === 'workflow_job') {
+    const job = payload.workflow_job;
+    const state = job?.conclusion ?? job?.status;
+    return [job?.workflow_name ?? job?.name, state].filter(Boolean).join(' · ');
+  }
+  if (event === 'pull_request') {
+    return [payload.action, payload.pull_request?.title]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  if (event === 'issues' || event === 'issue_comment') {
+    return [payload.action, payload.issue?.title].filter(Boolean).join(' · ');
+  }
+  if (event === 'release') {
+    return [payload.action, payload.release?.tag_name ?? payload.release?.name]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  if (event === 'repository_dispatch') {
+    return payload.action;
+  }
+  return payload.action;
+}
+
 export function applyGithubEvent(
   store: MemoryStore,
   input: ApplyGithubEventInput,
 ): void {
-  const repo = input.payload.repository;
+  const repo = repoFrom(input.payload);
   const componentId = repo?.full_name;
   const receivedAt = input.receivedAt ?? new Date().toISOString();
 
@@ -39,10 +106,16 @@ export function applyGithubEvent(
     event: input.event,
     receivedAt,
     componentId,
+    actor: input.payload.sender?.login,
+    action: input.payload.action,
+    summary: hookSummary(input.event, input.payload),
   });
 
-  if (componentId && repo?.name) {
-    store.upsertComponent({ id: componentId, name: repo.name });
+  if (componentId) {
+    store.upsertComponent({
+      id: componentId,
+      name: repo?.name ?? componentId.split('/').pop() ?? componentId,
+    });
   }
 
   const people = collectPeople(input.payload);

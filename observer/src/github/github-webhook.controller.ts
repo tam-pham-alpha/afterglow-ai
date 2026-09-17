@@ -21,10 +21,21 @@ export class GithubWebhookController {
       deliveryId,
       signature,
       rawBody: req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {})),
-      payload: req.body,
+      payload: asPayload(req.body),
       viaSmeeProxy: smeeProxy === '1' && isLoopback(req),
     });
   }
+}
+
+function asPayload(body: unknown): unknown {
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body) as unknown;
+    } catch {
+      return {};
+    }
+  }
+  return body ?? {};
 }
 
 function isLoopback(req: Request): boolean {
