@@ -170,34 +170,58 @@
         background: rgba(158, 180, 204, 0.12);
       }
 
-      #drawer {
+      #modal {
         display: none;
-        margin-top: 1rem;
-        border-top: 1px solid var(--line);
-        padding-top: 0.9rem;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
       }
 
-      #drawer.open {
-        display: block;
+      #modal.open {
+        display: flex;
       }
 
-      #drawer header {
+      #modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(6, 7, 10, 0.72);
+      }
+
+      #modal-dialog {
+        position: relative;
+        z-index: 1;
+        width: min(56rem, 100%);
+        max-height: calc(100vh - 2.5rem);
+        display: flex;
+        flex-direction: column;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 0.6rem;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        padding: 1.1rem 1.2rem 1.2rem;
+      }
+
+      #modal-dialog header {
         display: flex;
         justify-content: space-between;
         align-items: baseline;
         gap: 1rem;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.75rem;
       }
 
-      #drawer h3 {
+      #modal-dialog h3 {
         margin: 0;
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         font-weight: 600;
       }
 
-      #drawer pre {
+      #modal-dialog pre {
         margin: 0;
-        max-height: 28rem;
+        flex: 1;
+        min-height: 12rem;
         overflow: auto;
         background: #0b0b0f;
         border: 1px solid var(--line);
@@ -226,20 +250,23 @@
           </header>
           <p class="empty" id="status">Loading events…</p>
         </div>
-        <section id="drawer" aria-live="polite">
-          <header>
-            <h3 id="drawer-title">Payload</h3>
-            <button type="button" class="payload-btn" id="drawer-close">Close</button>
-          </header>
-          <pre id="drawer-body"></pre>
-        </section>
       </article>
     </main>
+    <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+      <div id="modal-backdrop"></div>
+      <div id="modal-dialog">
+        <header>
+          <h3 id="modal-title">Payload</h3>
+          <button type="button" class="payload-btn" id="modal-close">Close</button>
+        </header>
+        <pre id="modal-body"></pre>
+      </div>
+    </div>
     <script>
       const card = document.getElementById("card");
-      const drawer = document.getElementById("drawer");
-      const drawerTitle = document.getElementById("drawer-title");
-      const drawerBody = document.getElementById("drawer-body");
+      const modal = document.getElementById("modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalBody = document.getElementById("modal-body");
       let openId = "";
 
       function esc(value) {
@@ -272,10 +299,12 @@
           </header>`;
       }
 
-      function closeDrawer() {
+      function closeModal() {
         openId = "";
-        drawer.classList.remove("open");
-        drawerBody.textContent = "";
+        modal.classList.remove("open");
+        modal.hidden = true;
+        modalBody.textContent = "";
+        document.body.style.overflow = "";
         card.querySelectorAll(".payload-btn[aria-expanded='true']").forEach((btn) => {
           btn.setAttribute("aria-expanded", "false");
         });
@@ -342,12 +371,14 @@
 
       async function openPayload(id) {
         if (openId === id) {
-          closeDrawer();
+          closeModal();
           return;
         }
-        drawerTitle.textContent = "Loading payload…";
-        drawerBody.textContent = "";
-        drawer.classList.add("open");
+        modalTitle.textContent = "Loading payload…";
+        modalBody.textContent = "";
+        modal.hidden = false;
+        modal.classList.add("open");
+        document.body.style.overflow = "hidden";
         openId = id;
         card.querySelectorAll(".payload-btn").forEach((btn) => {
           btn.setAttribute("aria-expanded", btn.getAttribute("data-id") === id ? "true" : "false");
@@ -355,20 +386,20 @@
         try {
           const res = await fetch(`/events/${encodeURIComponent(id)}`);
           if (!res.ok) {
-            drawerTitle.textContent = "Payload";
-            drawerBody.textContent = `HTTP ${res.status}`;
+            modalTitle.textContent = "Payload";
+            modalBody.textContent = `HTTP ${res.status}`;
             return;
           }
           const row = await res.json();
           const name = row.title || row.event;
-          drawerTitle.textContent = `${row.event}${name ? ` · ${name}` : ""}`;
-          drawerBody.textContent =
+          modalTitle.textContent = `${row.event}${name ? ` · ${name}` : ""}`;
+          modalBody.textContent =
             row.payload == null
               ? "No payload stored for this event."
               : JSON.stringify(row.payload, null, 2);
         } catch (err) {
-          drawerTitle.textContent = "Payload";
-          drawerBody.textContent = err.message || "failed to load";
+          modalTitle.textContent = "Payload";
+          modalBody.textContent = err.message || "failed to load";
         }
       }
 
@@ -380,7 +411,13 @@
         void openPayload(btn.getAttribute("data-id"));
       });
 
-      document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+      document.getElementById("modal-close").addEventListener("click", closeModal);
+      document.getElementById("modal-backdrop").addEventListener("click", closeModal);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && openId) {
+          closeModal();
+        }
+      });
 
       async function refresh() {
         try {
