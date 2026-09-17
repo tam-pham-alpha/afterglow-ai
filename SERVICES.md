@@ -112,21 +112,15 @@ Local ports `3200–3202` are unused on the djao NUC inventory. Keep them unless
 | `3201` | health-monitor | Tailscale OK (`GET http://100.103.18.57:3201/`) |
 | `3202` | ingest | **localhost or Tailscale only** — no public bind |
 
-### GitHub → NUC (gotcha)
+### GitHub → NUC — smee (decided)
 
-GitHub cannot call a Tailscale IP. `http://100.103.18.57:3200/hooks/github` will not receive webhooks.
+GitHub cannot call a Tailscale IP. Do **not** point the App webhook at `http://100.103.18.57:3200/hooks/github`.
 
-Pick one public path and set it as the App webhook URL (and `AFTERGLOW_WEBHOOK_URL`):
+**Keep the current smee.io channel.** GitHub stays aimed at that URL. NUC observer subscribes (same as laptop) via `.data/github.json` (`webhookProxy` + smee URL). Leave `AFTERGLOW_WEBHOOK_URL` empty so ingest does not mint a new channel. Do not change the App webhook URL.
 
-| Option | When |
-|--------|------|
-| Keep smee.io, observer subscribes on NUC | Fastest first deploy; smee stays the public face |
-| Cloudflare Tunnel (or similar) → `127.0.0.1:3200/hooks/github` | Prefer for anything past dogfood |
-| ngrok / other HTTPS proxy | Temporary |
+Copy `.data/github.json` onto NUC (secret + PEM + smee URL). One **live** smee subscriber only: stop laptop `yarn dev:observer` when NUC observer is up, or both will write the same deliveries.
 
-`INGEST_PUBLIC_URL` only matters if you recreate the App (callback/setup). The current App is already registered.
-
-After moving webhook off laptop smee: update the App hook URL, keep the **same** webhook secret as `.data/github.json`, restart observer.
+`INGEST_PUBLIC_URL` only matters if you recreate the App. The current App is already registered. Tunnel / ngrok is out of scope unless we drop smee later.
 
 ### Proposed PM2 names
 
