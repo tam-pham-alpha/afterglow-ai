@@ -71,7 +71,34 @@ describe('applyGithubEvent', () => {
       componentName: 'djao-trading',
       actor: 'tam-pham-alpha',
       action: 'completed',
+      title: 'Deploy PAVN',
       summary: 'Deploy PAVN · main · success',
+      hasPayload: true,
     });
+    expect(store.events().items[0]).not.toHaveProperty('payload');
+    expect(store.getHook('wf-1')?.payload).toMatchObject({
+      workflow_run: { name: 'Deploy PAVN' },
+    });
+  });
+
+  it('uses the commit message as the push title', () => {
+    const store = new MemoryStore(null);
+    applyGithubEvent(store, {
+      deliveryId: 'push-1',
+      event: 'push',
+      payload: {
+        ref: 'refs/heads/main',
+        sender: { login: 'tam-pham-alpha' },
+        repository: {
+          full_name: 'tam-pham-alpha/djao-trading',
+          name: 'djao-trading',
+        },
+        head_commit: { message: 'fix smee truncation\n\nlonger body' },
+      },
+    });
+    expect(store.events().items[0].title).toBe('fix smee truncation');
+    expect(store.events().items[0].summary).toBe(
+      'main · fix smee truncation',
+    );
   });
 });

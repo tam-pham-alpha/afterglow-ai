@@ -30,8 +30,10 @@
       }
 
       main {
-        width: min(56rem, calc(100% - 2rem));
-        margin: 2rem auto 3rem;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 1.25rem 1.25rem 2rem;
       }
 
       .card {
@@ -125,12 +127,6 @@
         white-space: nowrap;
       }
 
-      .id {
-        color: var(--muted);
-        font-size: 0.8rem;
-        word-break: break-all;
-      }
-
       .empty,
       .err {
         color: var(--muted);
@@ -144,11 +140,73 @@
       .kind {
         color: var(--glow);
         font-size: 0.8rem;
+        white-space: nowrap;
       }
 
-      .summary {
+      .title {
         color: var(--ink);
-        font-size: 0.88rem;
+        font-size: 0.9rem;
+      }
+
+      .payload-btn {
+        background: transparent;
+        color: var(--glow);
+        border: 1px solid var(--line);
+        border-radius: 0.3rem;
+        padding: 0.2rem 0.5rem;
+        font: inherit;
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .payload-btn:disabled {
+        color: var(--muted);
+        cursor: not-allowed;
+      }
+
+      .payload-btn[aria-expanded="true"] {
+        background: rgba(158, 180, 204, 0.12);
+      }
+
+      #drawer {
+        display: none;
+        margin-top: 1rem;
+        border-top: 1px solid var(--line);
+        padding-top: 0.9rem;
+      }
+
+      #drawer.open {
+        display: block;
+      }
+
+      #drawer header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        margin-bottom: 0.6rem;
+      }
+
+      #drawer h3 {
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      #drawer pre {
+        margin: 0;
+        max-height: 28rem;
+        overflow: auto;
+        background: #0b0b0f;
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 0.75rem 0.85rem;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       @media (max-width: 640px) {
@@ -160,16 +218,29 @@
   </head>
   <body>
     <main>
-      <article class="card" id="card">
-        <header>
-          <h1>Afterglow</h1>
-          <span class="badge">observer · events</span>
-        </header>
-        <p class="empty" id="status">Loading events…</p>
+      <article class="card">
+        <div id="card">
+          <header>
+            <h1>Afterglow</h1>
+            <span class="badge">observer · events</span>
+          </header>
+          <p class="empty" id="status">Loading events…</p>
+        </div>
+        <section id="drawer" aria-live="polite">
+          <header>
+            <h3 id="drawer-title">Payload</h3>
+            <button type="button" class="payload-btn" id="drawer-close">Close</button>
+          </header>
+          <pre id="drawer-body"></pre>
+        </section>
       </article>
     </main>
     <script>
       const card = document.getElementById("card");
+      const drawer = document.getElementById("drawer");
+      const drawerTitle = document.getElementById("drawer-title");
+      const drawerBody = document.getElementById("drawer-body");
+      let openId = "";
 
       function esc(value) {
         return String(value)
@@ -201,6 +272,15 @@
           </header>`;
       }
 
+      function closeDrawer() {
+        openId = "";
+        drawer.classList.remove("open");
+        drawerBody.textContent = "";
+        card.querySelectorAll(".payload-btn[aria-expanded='true']").forEach((btn) => {
+          btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
       function render(payload) {
         if (!payload || typeof payload.total !== "number" || !Array.isArray(payload.items)) {
           card.innerHTML = `
@@ -217,22 +297,34 @@
                 <tr>
                   <th>Time</th>
                   <th>Event</th>
+                  <th>Name</th>
                   <th>Component</th>
                   <th>Actor</th>
-                  <th>Detail</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 ${payload.items
-                  .map(
-                    (row) => `<tr>
+                  .map((row) => {
+                    const name = row.title || row.summary || row.action || "—";
+                    const canOpen = Boolean(row.hasPayload);
+                    return `<tr>
                       <td class="time" title="${esc(row.receivedAt)}">${esc(formatTime(row.receivedAt))}</td>
                       <td class="kind">${esc(row.event)}</td>
+                      <td class="title">${esc(name)}</td>
                       <td>${esc(row.componentId || row.componentName || "—")}</td>
                       <td>${esc(row.actor || "—")}</td>
-                      <td class="summary">${esc(row.summary || row.action || "—")}</td>
-                    </tr>`,
-                  )
+                      <td>
+                        <button
+                          type="button"
+                          class="payload-btn"
+                          data-id="${esc(row.id)}"
+                          ${canOpen ? "" : "disabled"}
+                          aria-expanded="${openId === row.id ? "true" : "false"}"
+                        >Payload</button>
+                      </td>
+                    </tr>`;
+                  })
                   .join("")}
               </tbody>
             </table>`
@@ -247,6 +339,48 @@
           <h2>All events</h2>
           ${rows}`;
       }
+
+      async function openPayload(id) {
+        if (openId === id) {
+          closeDrawer();
+          return;
+        }
+        drawerTitle.textContent = "Loading payload…";
+        drawerBody.textContent = "";
+        drawer.classList.add("open");
+        openId = id;
+        card.querySelectorAll(".payload-btn").forEach((btn) => {
+          btn.setAttribute("aria-expanded", btn.getAttribute("data-id") === id ? "true" : "false");
+        });
+        try {
+          const res = await fetch(`/events/${encodeURIComponent(id)}`);
+          if (!res.ok) {
+            drawerTitle.textContent = "Payload";
+            drawerBody.textContent = `HTTP ${res.status}`;
+            return;
+          }
+          const row = await res.json();
+          const name = row.title || row.event;
+          drawerTitle.textContent = `${row.event}${name ? ` · ${name}` : ""}`;
+          drawerBody.textContent =
+            row.payload == null
+              ? "No payload stored for this event."
+              : JSON.stringify(row.payload, null, 2);
+        } catch (err) {
+          drawerTitle.textContent = "Payload";
+          drawerBody.textContent = err.message || "failed to load";
+        }
+      }
+
+      card.addEventListener("click", (event) => {
+        const btn = event.target.closest(".payload-btn");
+        if (!btn || btn.disabled) {
+          return;
+        }
+        void openPayload(btn.getAttribute("data-id"));
+      });
+
+      document.getElementById("drawer-close").addEventListener("click", closeDrawer);
 
       async function refresh() {
         try {

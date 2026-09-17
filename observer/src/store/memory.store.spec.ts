@@ -77,8 +77,9 @@ describe('MemoryStore', () => {
           event: 'push',
           componentId: 'org/afterglow-ai',
           componentName: 'afterglow-ai',
+          hasPayload: false,
         },
-        { id: 'older', event: 'ping' },
+        { id: 'older', event: 'ping', hasPayload: false },
       ],
     });
   });

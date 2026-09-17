@@ -25,6 +25,8 @@ type GithubPayload = {
     conclusion?: string | null;
   };
   head_commit?: { message?: string };
+  commits?: Array<{ message?: string }>;
+  zen?: string;
 };
 
 export type ApplyGithubEventInput = {
@@ -54,6 +56,37 @@ function repoFrom(payload: GithubPayload): GithubRepo | undefined {
 function firstLine(value: string | undefined): string | undefined {
   const line = value?.split('\n')[0]?.trim();
   return line || undefined;
+}
+
+function hookTitle(event: string, payload: GithubPayload): string | undefined {
+  if (event === 'push') {
+    return (
+      firstLine(payload.head_commit?.message) ??
+      firstLine(payload.commits?.[0]?.message)
+    );
+  }
+  if (event === 'workflow_run') {
+    return payload.workflow_run?.display_title ?? payload.workflow_run?.name;
+  }
+  if (event === 'workflow_job') {
+    return payload.workflow_job?.name ?? payload.workflow_job?.workflow_name;
+  }
+  if (event === 'pull_request') {
+    return payload.pull_request?.title;
+  }
+  if (event === 'issues' || event === 'issue_comment') {
+    return payload.issue?.title;
+  }
+  if (event === 'release') {
+    return payload.release?.name ?? payload.release?.tag_name;
+  }
+  if (event === 'repository_dispatch') {
+    return payload.action;
+  }
+  if (event === 'ping') {
+    return firstLine(payload.zen);
+  }
+  return payload.action;
 }
 
 function hookSummary(event: string, payload: GithubPayload): string | undefined {
@@ -108,7 +141,9 @@ export function applyGithubEvent(
     componentId,
     actor: input.payload.sender?.login,
     action: input.payload.action,
+    title: hookTitle(input.event, input.payload),
     summary: hookSummary(input.event, input.payload),
+    payload: input.payload,
   });
 
   if (componentId) {

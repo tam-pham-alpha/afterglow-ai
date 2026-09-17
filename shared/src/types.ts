@@ -24,11 +24,14 @@ export type HookEvent = {
   componentId?: string;
   actor?: string;
   action?: string;
+  title?: string;
   summary?: string;
+  payload?: unknown;
 };
 
-export type HookEventView = HookEvent & {
+export type HookEventView = Omit<HookEvent, 'payload'> & {
   componentName?: string;
+  hasPayload: boolean;
 };
 
 export type EventsSnapshot = {

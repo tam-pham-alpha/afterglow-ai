@@ -7,6 +7,7 @@ import type {
   Employee,
   EventsSnapshot,
   HookEvent,
+  HookEventView,
   InstructionRecord,
   KnowledgeDocument,
   MapSnapshot,
@@ -104,16 +105,33 @@ export class MemoryStore {
   }
 
   events(): EventsSnapshot {
-    const items = this.listHooks().map((hook) => ({
-      ...hook,
-      componentName: hook.componentId
-        ? this.state.components[hook.componentId]?.name
-        : undefined,
-    }));
+    const items = this.listHooks().map((hook) => this.toEventView(hook));
     return {
       generatedAt: new Date().toISOString(),
       total: items.length,
       items,
+    };
+  }
+
+  getHook(id: string): (HookEventView & { payload?: unknown }) | undefined {
+    const hook = this.state.hooks.find((row) => row.id === id);
+    if (!hook) {
+      return undefined;
+    }
+    return {
+      ...this.toEventView(hook),
+      payload: hook.payload,
+    };
+  }
+
+  private toEventView(hook: HookEvent): HookEventView {
+    const { payload: _payload, ...rest } = hook;
+    return {
+      ...rest,
+      componentName: hook.componentId
+        ? this.state.components[hook.componentId]?.name
+        : undefined,
+      hasPayload: hook.payload !== undefined,
     };
   }
 
