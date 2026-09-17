@@ -202,6 +202,8 @@ Không tạo `cron/` hay `resolver/` riêng ngày 1. Tách `resolver/` khi agent
 
 ## Trạng thái
 
+Ports, NUC, GitHub App, và file gitignored: [SERVICES.md](./SERVICES.md).
+
 `shared` + `observer` + `ingest` + một card CHM display-only. MCP / web chưa có.
 
 ```bash
