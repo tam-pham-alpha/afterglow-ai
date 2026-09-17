@@ -1,6 +1,6 @@
 # observer
 
-GitHub is the bell. This process receives webhooks, writes people / components / relationships into the store, and exposes `/overview` for the CHM card.
+GitHub is the bell. This process receives webhooks, writes people / components / relationships into the store, exposes `/overview` for the CHM card, and serves a newest-first event list at `/`.
 
 Cron backfill is not in this slice.
 
@@ -11,6 +11,8 @@ yarn workspace @afterglow-ai/shared build
 yarn workspace @afterglow-ai/observer dev
 ```
 
+- `GET /` — event timeline (HTML)
+- `GET /events` — hook list, newest `receivedAt` first
 - `POST /hooks/github` — GitHub webhook
 - `GET /overview` — snapshot for CHM
 - `GET /health`

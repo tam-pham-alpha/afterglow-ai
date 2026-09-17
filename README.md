@@ -189,7 +189,7 @@ afterglow-ai/
 | --- | --- |
 | `shared` | `Instruction`, `Service`, `Employee`, `Decision`, `Event`, `Seed`. Mọi process import `@afterglow-ai/shared` |
 | `ingest` | Cổng admin. Instruction / seed / map / GitHub connect. Port `3202`. [`ingest/README.md`](ingest/README.md) |
-| `observer` | Webhook là đường chính (`POST /hooks/github`). Cron backfill chưa có. Port `3200`. [`observer/README.md`](observer/README.md) |
+| `observer` | Webhook là đường chính (`POST /hooks/github`). Timeline sự kiện tại `/`. Cron backfill chưa có. Port `3200`. [`observer/README.md`](observer/README.md) |
 | `mcp` | Afterglow MCP — stdio cho Cursor. Hỏi store, không nhận upload |
 | `web` | UI sau này. Mọi ghi admin vẫn gọi ingest, không ghi thẳng store |
 | `docs/` | Landing tĩnh, GitHub Pages. Không phải trí nhớ tổ chức |

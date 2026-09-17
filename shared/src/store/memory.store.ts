@@ -5,6 +5,7 @@ import type {
   Component,
   DocCount,
   Employee,
+  EventsSnapshot,
   HookEvent,
   InstructionRecord,
   KnowledgeDocument,
@@ -93,6 +94,27 @@ export class MemoryStore {
   addHook(hook: HookEvent): void {
     this.state.hooks.push(hook);
     this.persist();
+  }
+
+  listHooks(): HookEvent[] {
+    return [...this.state.hooks].sort((a, b) => {
+      const byTime = b.receivedAt.localeCompare(a.receivedAt);
+      return byTime !== 0 ? byTime : a.id.localeCompare(b.id);
+    });
+  }
+
+  events(): EventsSnapshot {
+    const items = this.listHooks().map((hook) => ({
+      ...hook,
+      componentName: hook.componentId
+        ? this.state.components[hook.componentId]?.name
+        : undefined,
+    }));
+    return {
+      generatedAt: new Date().toISOString(),
+      total: items.length,
+      items,
+    };
   }
 
   upsertEmployee(employee: Employee): void {

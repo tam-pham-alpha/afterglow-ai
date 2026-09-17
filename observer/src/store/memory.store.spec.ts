@@ -52,4 +52,34 @@ describe('MemoryStore', () => {
     const reloaded = MemoryStore.load(file);
     expect(reloaded.overview().docs.total).toBe(3);
   });
+
+  it('lists hooks newest first and resolves component names', () => {
+    const store = new MemoryStore(null);
+    store.addHook({
+      id: 'older',
+      event: 'ping',
+      receivedAt: '2026-09-13T00:00:00.000Z',
+    });
+    store.addHook({
+      id: 'newer',
+      event: 'push',
+      receivedAt: '2026-09-17T10:00:00.000Z',
+      componentId: 'org/afterglow-ai',
+    });
+    store.upsertComponent({ id: 'org/afterglow-ai', name: 'afterglow-ai' });
+
+    expect(store.listHooks().map((hook) => hook.id)).toEqual(['newer', 'older']);
+    expect(store.events()).toMatchObject({
+      total: 2,
+      items: [
+        {
+          id: 'newer',
+          event: 'push',
+          componentId: 'org/afterglow-ai',
+          componentName: 'afterglow-ai',
+        },
+        { id: 'older', event: 'ping' },
+      ],
+    });
+  });
 });

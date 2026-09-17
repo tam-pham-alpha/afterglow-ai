@@ -24,6 +24,16 @@ export type HookEvent = {
   componentId?: string;
 };
 
+export type HookEventView = HookEvent & {
+  componentName?: string;
+};
+
+export type EventsSnapshot = {
+  generatedAt: string;
+  total: number;
+  items: HookEventView[];
+};
+
 export type DocCount = {
   componentId: string;
   count: number;

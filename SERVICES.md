@@ -34,7 +34,7 @@ Build `shared` after any change under `shared/`. Observer and ingest load `share
 
 | Service | Package | Stack | Port | Health | Role |
 |---------|---------|-------|------|--------|------|
-| **Observer** | `@afterglow-ai/observer` | NestJS | `3200` | `GET /health` | GitHub webhook → store · `GET /overview` |
+| **Observer** | `@afterglow-ai/observer` | NestJS | `3200` | `GET /health` | GitHub webhook → store · `GET /` events · `GET /overview` |
 | **Health monitor** | `@afterglow-ai/health-monitor` | NestJS | `3201` | `GET /api/health` | Display-only CHM (`GET /` · `GET /api/overview` → observer) |
 | **Ingest** | `@afterglow-ai/ingest` | NestJS | `3202` | `GET /health` | Admin gate: instruction, seed, map, GitHub App |
 | **Shared** | `@afterglow-ai/shared` | TypeScript | — | — | Types + `memory.json` / `github.json` helpers |
@@ -45,6 +45,8 @@ Not built yet: `mcp/`, `web/`.
 
 | Method | Path | Role |
 |--------|------|------|
+| `GET` | `/` | Event timeline (HTML, newest first) |
+| `GET` | `/events` | Hook list JSON |
 | `POST` | `/hooks/github` | Webhook (GitHub or smee forward) |
 | `GET` | `/overview` | Snapshot for CHM |
 | `GET` | `/health` | Liveness |
@@ -122,7 +124,7 @@ Processes bind `*:3200–3202`. Reach them on Tailscale; do not publish ingest o
 
 | Port | PM2 | Package script | Liveness | UI / API |
 |------|-----|----------------|----------|----------|
-| `3200` | `afterglow-observer` | `observer/dist/main.js` | http://100.103.18.57:3200/health | `GET /overview` · `POST /hooks/github` (smee only) |
+| `3200` | `afterglow-observer` | `observer/dist/main.js` | http://100.103.18.57:3200/health | http://100.103.18.57:3200/ · `GET /events` · `GET /overview` · `POST /hooks/github` (smee only) |
 | `3201` | `afterglow-health` | `health-monitor/dist/main.js` | http://100.103.18.57:3201/api/health | http://100.103.18.57:3201/ · `GET /api/overview` |
 | `3202` | `afterglow-ingest` | `ingest/dist/main.js` | http://100.103.18.57:3202/health | http://100.103.18.57:3202/ (admin, no auth) |
 
