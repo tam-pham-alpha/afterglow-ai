@@ -35,7 +35,7 @@ Build `shared` after any change under `shared/`. Observer and ingest load `share
 | Service | Package | Stack | Port | Health | Role |
 |---------|---------|-------|------|--------|------|
 | **Observer** | `@afterglow-ai/observer` | NestJS | `3200` | `GET /health` | GitHub webhook → store · `GET /overview` |
-| **Health monitor** | `@afterglow-ai/health-monitor` | NestJS | `3201` | `GET /health` | Display-only CHM card (`GET /api/overview` → observer) |
+| **Health monitor** | `@afterglow-ai/health-monitor` | NestJS | `3201` | `GET /api/health` | Display-only CHM (`GET /` · `GET /api/overview` → observer) |
 | **Ingest** | `@afterglow-ai/ingest` | NestJS | `3202` | `GET /health` | Admin gate: instruction, seed, map, GitHub App |
 | **Shared** | `@afterglow-ai/shared` | TypeScript | — | — | Types + `memory.json` / `github.json` helpers |
 
@@ -55,7 +55,7 @@ smee re-serializes JSON and breaks GitHub HMAC. Observer accepts that hop when t
 
 ### Ingest surfaces
 
-Admin UI: `GET /` → http://127.0.0.1:3202/
+Admin UI: `GET /` → http://127.0.0.1:3202/ (local) · http://100.103.18.57:3202/ (NUC Tailscale)
 
 `PUT/GET /instructions` · `POST/GET /seeds` · `PUT/GET /map` · `GET/POST/DELETE /github` · Connect / callback / ping / refresh-install.
 
@@ -73,7 +73,7 @@ Same directory for ingest and observer. Default: repo-root `.data/`.
 
 `.gitignore` covers `.env`, `.data`, `*.pem`.
 
-Copy `.data/` onto NUC (or recreate via ingest). A fresh clone has empty memory.
+NUC already has a copy of `.data/` (memory + GitHub connection). A fresh clone elsewhere starts empty — copy this directory, do not git it.
 
 ## GitHub App (this instance)
 
@@ -94,51 +94,59 @@ Webhook secret and PEM live only in `.data/github.json` (and the downloaded `.pe
 
 Local webhook uses a **smee.io** channel stored on that file. smee is a capability URL — treat it like a secret; anyone who has it can inject events.
 
-## Production (NUC) — not provisioned yet
+## Production (NUC) — live 2026-09-17
 
-Intended host: `djao@djao-prod` (same box as djao-trading / date-society). Tailscale **`100.103.18.57`** (djao NUC). Confirm `hostname` / IP before bind.
+Host `djao@djao-prod` (same box as djao-trading / date-society). Tailscale **`100.103.18.57`**. Login from djao-trading: `yarn login:nuc` (`ssh -i _deploy/djao_nuc djao@djao-prod`).
 
-Proposed clone: `~/prod/afterglow-ai`. Deploy = `git pull` `origin/main` on that clone, then restart processes. **Push before pull.** Host-only `.env` and `.data/` after pull.
+Clone: `~/prod/afterglow-ai` (`/home/djao/prod/afterglow-ai`). Host-only `.env` + `.data/` (not in git). `yarn deploy:*` is **not** in this repo yet — pull then restart PM2 by hand.
 
-`yarn deploy:*` / PM2 names are **not in this repo yet**.
+```bash
+# after push to origin/main
+ssh -i _deploy/djao_nuc djao@djao-prod
+source ~/.nvm/nvm.sh
+cd ~/prod/afterglow-ai
+git fetch origin && git reset --hard origin/main
+yarn install --frozen-lockfile
+yarn workspace @afterglow-ai/shared build
+yarn workspace @afterglow-ai/observer build
+yarn workspace @afterglow-ai/ingest build
+yarn workspace @afterglow-ai/health-monitor build
+pm2 restart afterglow-observer afterglow-health afterglow-ingest
+```
 
-### Proposed NUC ports
+Do not run laptop `yarn dev:observer` at the same time (duplicate smee writes).
 
-Local ports `3200–3202` are unused on the djao NUC inventory. Keep them unless a bind fails.
+### NUC ports
 
-| Port | Service | Bind |
-|------|---------|------|
-| `3200` | observer | Tailscale / localhost — **not** a GitHub target by itself |
-| `3201` | health-monitor | Tailscale OK (`GET http://100.103.18.57:3201/`) |
-| `3202` | ingest | **localhost or Tailscale only** — no public bind |
+Processes bind `*:3200–3202`. Reach them on Tailscale; do not publish ingest on the public internet.
+
+| Port | PM2 | Package script | Liveness | UI / API |
+|------|-----|----------------|----------|----------|
+| `3200` | `afterglow-observer` | `observer/dist/main.js` | http://100.103.18.57:3200/health | `GET /overview` · `POST /hooks/github` (smee only) |
+| `3201` | `afterglow-health` | `health-monitor/dist/main.js` | http://100.103.18.57:3201/api/health | http://100.103.18.57:3201/ · `GET /api/overview` |
+| `3202` | `afterglow-ingest` | `ingest/dist/main.js` | http://100.103.18.57:3202/health | http://100.103.18.57:3202/ (admin, no auth) |
+
+On-box probes use `127.0.0.1` and the same paths. `OBSERVER_URL=http://127.0.0.1:3200` in host `.env`.
+
+cwd for all three: `/home/djao/prod/afterglow-ai`. `AFTERGLOW_DATA_DIR=.data` (repo-root `.data`).
 
 ### GitHub → NUC — smee (decided)
 
 GitHub cannot call a Tailscale IP. Do **not** point the App webhook at `http://100.103.18.57:3200/hooks/github`.
 
-**Keep the current smee.io channel.** GitHub stays aimed at that URL. NUC observer subscribes (same as laptop) via `.data/github.json` (`webhookProxy` + smee URL). Leave `AFTERGLOW_WEBHOOK_URL` empty so ingest does not mint a new channel. Do not change the App webhook URL.
+**Keep the current smee.io channel.** GitHub stays aimed at that URL. NUC observer subscribes via `.data/github.json` (`webhookProxy` + smee URL). Leave `AFTERGLOW_WEBHOOK_URL` empty. Do not change the App webhook URL.
 
-Copy `.data/github.json` onto NUC (secret + PEM + smee URL). One **live** smee subscriber only: stop laptop `yarn dev:observer` when NUC observer is up, or both will write the same deliveries.
+One **live** smee subscriber: NUC `afterglow-observer` only.
 
-`INGEST_PUBLIC_URL` only matters if you recreate the App. The current App is already registered. Tunnel / ngrok is out of scope unless we drop smee later.
-
-### Proposed PM2 names
-
-| Process | cwd | Script |
-|---------|-----|--------|
-| `afterglow-observer` | clone root | `yarn workspace @afterglow-ai/observer start:prod` (after `yarn build`) |
-| `afterglow-health` | clone root | `yarn workspace @afterglow-ai/health-monitor start:prod` |
-| `afterglow-ingest` | clone root | `yarn workspace @afterglow-ai/ingest start:prod` |
-
-`AFTERGLOW_DATA_DIR` must be the same absolute path for all three.
+`INGEST_PUBLIC_URL` only matters if you recreate the App. Tunnel / ngrok is out of scope unless we drop smee later.
 
 ## Port map (quick)
 
 | Port | Where | Service |
 |------|-------|---------|
-| `3200` | local · NUC (planned) | observer |
-| `3201` | local · NUC (planned) | health-monitor |
-| `3202` | local · NUC localhost/Tailscale (planned) | ingest |
+| `3200` | local dev · **NUC** | observer |
+| `3201` | local dev · **NUC** | health-monitor |
+| `3202` | local dev · **NUC** (Tailscale / no public ingest) | ingest |
 | `4321` | — | `web/` not built |
 | Pages | public | https://tam-pham-alpha.github.io/afterglow-ai/ — landing only, not the store |
 
