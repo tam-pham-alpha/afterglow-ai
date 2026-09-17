@@ -93,6 +93,51 @@ describe('GithubConnectService', () => {
     expect(loadGithubConnection()?.webhookSecret).toBeTruthy();
   });
 
+  it('reuses the stored webhook URL instead of opening smee again', async () => {
+    saveGithubConnection({
+      webhookSecret: 'already-there',
+      webhookUrl: 'https://smee.io/already-there',
+      webhookProxy: true,
+      createdAt: '2026-09-13T00:00:00.000Z',
+      updatedAt: '2026-09-13T00:00:00.000Z',
+    });
+    const github = new GithubConnectService();
+    const started = await github.start({
+      ingestUrl: 'http://127.0.0.1:3202',
+    });
+    expect(started.webhookUrl).toBe('https://smee.io/already-there');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a 400 when GitHub API is unreachable', async () => {
+    saveGithubConnection({
+      webhookSecret: 'x',
+      appId: 1,
+      privateKey: generateKeyPairSync('rsa', { modulusLength: 2048 })
+        .privateKey.export({ type: 'pkcs1', format: 'pem' })
+        .toString(),
+      createdAt: '2026-09-13T00:00:00.000Z',
+      updatedAt: '2026-09-13T00:00:00.000Z',
+    });
+    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+    const github = new GithubConnectService();
+    await expect(github.refreshInstall()).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('GitHub API /app/installations unreachable'),
+    });
+  });
+
+  it('returns a 400 when smee.io cannot be reached', async () => {
+    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+    const github = new GithubConnectService();
+    await expect(
+      github.start({ ingestUrl: 'http://127.0.0.1:3202' }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('could not open a smee.io channel'),
+    });
+  });
+
   it('stores the app credentials after the manifest conversion', async () => {
     saveGithubConnection({
       webhookSecret: 'temp',

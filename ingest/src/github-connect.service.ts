@@ -44,6 +44,7 @@ export class GithubConnectService {
     const webhookUrl =
       input.webhookUrl?.trim() ||
       process.env.AFTERGLOW_WEBHOOK_URL?.trim() ||
+      loadGithubConnection()?.webhookUrl?.trim() ||
       (await createSmeeChannel());
     const manifest = buildGithubAppManifest({
       name: randomAppName(),
@@ -213,17 +214,24 @@ function parseAppId(value: number | string | undefined): number | undefined {
 }
 
 async function createSmeeChannel(): Promise<string> {
-  const res = await fetch('https://smee.io/new', {
-    method: 'HEAD',
-    redirect: 'manual',
-  });
-  const location = res.headers.get('location');
-  if (location && /^https:\/\/smee\.io\//i.test(location)) {
-    return location;
-  }
-  const again = await fetch('https://smee.io/new', { redirect: 'follow' });
-  if (again.ok && /smee\.io\//i.test(again.url)) {
-    return again.url;
+  try {
+    const res = await fetch('https://smee.io/new', {
+      method: 'HEAD',
+      redirect: 'manual',
+    });
+    const location = res.headers.get('location');
+    if (location && /^https:\/\/smee\.io\//i.test(location)) {
+      return location;
+    }
+    const again = await fetch('https://smee.io/new', { redirect: 'follow' });
+    if (again.ok && /smee\.io\//i.test(again.url)) {
+      return again.url;
+    }
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'network error';
+    throw new BadRequestException(
+      `could not open a smee.io channel (${detail}) — paste a public webhook URL (ngrok / smee) and retry`,
+    );
   }
   throw new BadRequestException(
     'could not open a smee.io channel — paste a public webhook URL (ngrok / smee) and retry',
@@ -231,14 +239,22 @@ async function createSmeeChannel(): Promise<string> {
 }
 
 async function githubApi<T>(path: string, jwt: string): Promise<T> {
-  const res = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${jwt}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'afterglow-ai',
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`https://api.github.com${path}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${jwt}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'afterglow-ai',
+      },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'network error';
+    throw new BadRequestException(
+      `GitHub API ${path} unreachable (${detail})`,
+    );
+  }
   if (!res.ok) {
     throw new BadRequestException(
       `GitHub API ${path} ${res.status}: ${await res.text()}`,

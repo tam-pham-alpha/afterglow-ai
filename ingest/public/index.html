@@ -227,6 +227,16 @@
         showTab("github");
       }
 
+      async function errorText(res) {
+        const text = await res.text();
+        try {
+          const json = JSON.parse(text);
+          return json.message || text;
+        } catch {
+          return text;
+        }
+      }
+
       async function loadGithub() {
         const gh = await (await fetch("/github")).json();
         $("github-status").textContent = formatGithub(gh);
@@ -339,7 +349,7 @@
         });
         if (!res.ok) {
           $("github-meta").className = "err";
-          $("github-meta").textContent = await res.text();
+          $("github-meta").textContent = await errorText(res);
           return;
         }
         const data = await res.json();
@@ -369,7 +379,7 @@
         const res = await fetch("/github/refresh-install", { method: "POST" });
         if (!res.ok) {
           $("github-meta").className = "err";
-          $("github-meta").textContent = await res.text();
+          $("github-meta").textContent = await errorText(res);
           return;
         }
         $("github-meta").className = "ok";
@@ -381,7 +391,7 @@
         const res = await fetch("/github/ping", { method: "POST" });
         if (!res.ok) {
           $("github-meta").className = "err";
-          $("github-meta").textContent = await res.text();
+          $("github-meta").textContent = await errorText(res);
           return;
         }
         $("github-meta").className = "ok";
@@ -405,7 +415,7 @@
         });
         if (!res.ok) {
           $("github-meta").className = "err";
-          $("github-meta").textContent = await res.text();
+          $("github-meta").textContent = await errorText(res);
           return;
         }
         $("github-secret").value = "";
