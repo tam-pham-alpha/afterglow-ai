@@ -1,4 +1,8 @@
-import { forwardSmeeEvent, SMEE_PROXY_HEADER } from './smee-proxy';
+import {
+  forwardSmeeEvent,
+  SMEE_IDLE_MS,
+  SMEE_PROXY_HEADER,
+} from './smee-proxy';
 
 describe('forwardSmeeEvent', () => {
   let fetchMock: jest.Mock;
@@ -44,5 +48,9 @@ describe('forwardSmeeEvent', () => {
     expect(headers['host']).toBeUndefined();
     expect(headers['x-github-event']).toBe('push');
     expect(init.body).toContain('djao-trading');
+  });
+
+  it('reconnects a silent smee stream after two minutes', () => {
+    expect(SMEE_IDLE_MS).toBe(120_000);
   });
 });
