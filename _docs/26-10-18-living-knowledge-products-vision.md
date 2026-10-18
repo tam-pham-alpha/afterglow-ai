@@ -108,7 +108,7 @@ These are **logical responsibilities**, not a request to launch four services or
 
 Initial UX concept:
 
-\`\`\`text
+```text
 Composer
   -> create project
   -> curate knowledge / decisions / skills
@@ -126,7 +126,7 @@ optional feedback / consented excerpts
           |
           v
 review queue -> composer approval -> publish v2
-\`\`\`
+```
 
 ## Core boundary: durable knowledge != conversation history
 
@@ -142,13 +142,13 @@ Afterglow must preserve three different scopes:
 
 Example:
 
-\`\`\`text
+```text
 Consumer: "Redis always beats Postgres for this workload."
   -> chat reply; NOT a canonical fact
   -> perhaps feedback candidate when explicitly shared
   -> composer adds benchmark / evidence + reviews trade-offs
   -> publish a new knowledge item or Decision
-\`\`\`
+```
 
 An LLM-generated summary alone is not verification. A published claim should link to supporting evidence where available, carry its confidence/limitations, and preserve prior versions.
 
@@ -158,7 +158,7 @@ An LLM-generated summary alone is not verification. A published claim should lin
 
 The important loop is:
 
-\`\`\`text
+```text
 Create / seed expertise
    -> publish version
    -> consumers interact
@@ -167,7 +167,7 @@ Create / seed expertise
    -> composer checks sources, edits, approves
    -> publish next version
    -> measure whether answers actually improve
-\`\`\`
+```
 
 What can trigger an update?
 
@@ -212,13 +212,13 @@ Choose **one simple model** for the initial pilot; avoid combinatorial plans and
 
 Unit economics must account for:
 
-\`\`\`text
+```text
 consumer payment
   - payment processing / refunds / taxes where applicable
   - model inference + tool execution + retrieval costs
   - platform margin
   = creator earnings
-\`\`\`
+```
 
 An unlimited flat-rate chat product with expensive model/tool calls can lose money even when it has subscribers. Meter usage and set safe caps from day one. Show creators comprehensible **gross revenue, platform fees, model costs, and estimated net earnings**; make the eventual payout and tax obligations explicit before inviting the public.
 
@@ -226,14 +226,14 @@ An unlimited flat-rate chat product with expensive model/tool calls can lose mon
 
 ### Current code (as of 2026-10-18 review)
 
-From \`README.md\`, \`SERVICES.md\`, \`shared/src/types.ts\`, and workspaces:
+From `README.md`, `SERVICES.md`, `shared/src/types.ts`, and workspaces:
 
-- \`shared\`, \`ingest\`, \`observer\`, and \`health-monitor\` exist.
-- Current local durable store is \`.data/memory.json\`; GitHub connection secrets are stored separately.
-- \`observer\` receives GitHub webhooks and stores events, people, components, and relationships.
-- \`ingest\` handles intentional admin writes: instructions, seeds, maps, GitHub connection.
+- `shared`, `ingest`, `observer`, and `health-monitor` exist.
+- Current local durable store is `.data/memory.json`; GitHub connection secrets are stored separately.
+- `observer` receives GitHub webhooks and stores events, people, components, and relationships.
+- `ingest` handles intentional admin writes: instructions, seeds, maps, GitHub connection.
 - Shared types **do not yet implement the intended Decision runtime**; the core proof is not complete.
-- \`mcp/\` and \`web/\` are target surfaces, not implemented application workspaces yet.
+- `mcp/` and `web/` are target surfaces, not implemented application workspaces yet.
 - Admin ingest has no authentication and **must not** be made public as-is.
 - One fork / deployment is designed for one organization, not a hosted multi-tenant marketplace.
 
@@ -245,7 +245,7 @@ Keep the prior decision from [Afterglow × Engineering Society](./26-09-14-after
 
 **Afterglow remembers; an application interacts.**
 
-\`\`\`text
+```text
 Product / application layer (future)
   Composer Studio | Consumer Chat | Commerce
                        |
@@ -257,13 +257,13 @@ Product / application layer (future)
         ingest / observer / resolver
                        |
           GitHub / Docs / other sources
-\`\`\`
+```
 
 The product layer owns sessions, LLM orchestration, consumer identity, entitlements, and commerce. The memory core owns durable, evidence-backed expertise and its evolution. The product's deliberate curation/publishing actions need a controlled write interface (extending admin ingest/contracts where justified); consumer chat still never writes straight into canonical memory.
 
 A hosted future may require project/tenant isolation, user authorization, key management, and a transactional store. **Do not add multi-tenant DB architecture, graph databases, queues, or extra services simply because this document envisions a platform.** Introduce them only when the next product proof requires them.
 
-The current \`Decision\` primitive is strong for organizational architecture and expert choices, but **not every useful personal knowledge item is a Decision** (e.g., a lesson or reference principle). Test with real creator data before introducing a generic \`KnowledgeItem\` primitive. Retain provenance, versioning, and explicit status regardless of the eventual representation.
+The current `Decision` primitive is strong for organizational architecture and expert choices, but **not every useful personal knowledge item is a Decision** (e.g., a lesson or reference principle). Test with real creator data before introducing a generic `KnowledgeItem` primitive. Retain provenance, versioning, and explicit status regardless of the eventual representation.
 
 ## First proof and sequencing
 
@@ -271,14 +271,14 @@ The current \`Decision\` primitive is strong for organizational architecture and
 
 Preserve the existing first proof:
 
-\`\`\`text
+```text
 instruction
  -> PR merged
  -> observer sees event
  -> resolver finds the correct evidence
  -> Decision stored
  -> MCP can explain why it exists
-\`\`\`
+```
 
 This grounds the product's distinctive value. An unrelated marketplace UI does not substitute for it.
 
@@ -289,11 +289,11 @@ Use a technical expertise project (such as **Architecture Mentor**) with evidenc
 Minimal pilot scope:
 
 1. Composer configures the project, instructions, curated knowledge, and optionally one useful skill.
-2. Composer publishes \`v1\` and gets a shareable link.
+2. Composer publishes `v1` and gets a shareable link.
 3. Consumers use a simple chat UI with private per-user histories.
 4. Access is gated by a simple paid entitlement or controlled paid pilot; capture real willingness to pay.
 5. Model usage is metered and capped.
-6. Consumers can opt into giving useful feedback; the composer reviews it and publishes \`v2\`.
+6. Consumers can opt into giving useful feedback; the composer reviews it and publishes `v2`.
 7. Answers can cite the published knowledge/evidence and disclose unsupported claims.
 
 Do **not** build: public discovery marketplace, rankings, social feeds, creator cloning, autonomous self-training, broad tool marketplace, complicated payout automation, cross-project consumer profiling, or a multi-agent society for this pilot.
@@ -302,16 +302,16 @@ Do **not** build: public discovery marketplace, rankings, social feeds, creator 
 
 The smallest compelling proof:
 
-\`\`\`text
+```text
 one expert publishes a knowledge product
  -> 10 consumers use it
  -> >=1 consumer pays for it
  -> a meaningful feedback signal is reviewed
  -> composer publishes an evidence-backed improvement
  -> consumers experience a demonstrably better answer
-\`\`\`
+```
 
-Track: paid conversion, repeat engagement (e.g. D7/D30), answer usefulness with grounded examples, creator effort per update, cost per successful session, and whether \`v2\` actually improves a representative question set.
+Track: paid conversion, repeat engagement (e.g. D7/D30), answer usefulness with grounded examples, creator effort per update, cost per successful session, and whether `v2` actually improves a representative question set.
 
 Payment alone validates demand weakly; useful **repeat usage + improvement + workable unit economics** validate a living product.
 
@@ -350,7 +350,7 @@ Payment alone validates demand weakly; useful **repeat usage + improvement + wor
 ## Open questions (not blockers for this proposal)
 
 - Does the first monetizable creator need a hosted project, or can a smaller isolated pilot prove demand?
-- What is the minimal publishable knowledge contract beyond the current \`Decision\` concept?
+- What is the minimal publishable knowledge contract beyond the current `Decision` concept?
 - What precisely counts as a verified outcome for non-software expertise?
 - Should paid consumer access be subscription-with-cap or prepaid credits in the first test?
 - What retention/deletion promises can be supported by the first runtime and payment provider?
